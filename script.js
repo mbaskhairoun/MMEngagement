@@ -1,5 +1,5 @@
 // ============================================
-// RSVP Form Handling
+// RSVP Form Handling with Firebase Firestore
 // ============================================
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -8,6 +8,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const btnText = submitBtn.querySelector('.btn-text');
     const btnLoading = submitBtn.querySelector('.btn-loading');
     const formMessage = document.getElementById('formMessage');
+    const attendingFields = document.getElementById('attendingFields');
+    const guestNamesGroup = document.getElementById('guestNamesGroup');
+    const childrenAgesGroup = document.getElementById('childrenAgesGroup');
 
     // Smooth scroll for scroll indicator
     const scrollIndicator = document.querySelector('.scroll-indicator');
@@ -19,20 +22,90 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // Show/hide attending fields based on RSVP response
+    const attendingRadios = document.querySelectorAll('input[name="attending"]');
+    attendingRadios.forEach(radio => {
+        radio.addEventListener('change', function() {
+            if (this.value === 'yes') {
+                attendingFields.style.display = 'block';
+                document.getElementById('guests').setAttribute('required', 'required');
+            } else {
+                attendingFields.style.display = 'none';
+                document.getElementById('guests').removeAttribute('required');
+            }
+        });
+    });
+
+    // Show/hide guest names field based on guest count
+    const guestsSelect = document.getElementById('guests');
+    guestsSelect.addEventListener('change', function() {
+        if (parseInt(this.value) > 1) {
+            guestNamesGroup.style.display = 'block';
+        } else {
+            guestNamesGroup.style.display = 'none';
+        }
+    });
+
+    // Show/hide children ages field based on children count
+    const childrenCountSelect = document.getElementById('childrenCount');
+    childrenCountSelect.addEventListener('change', function() {
+        if (parseInt(this.value) > 0) {
+            childrenAgesGroup.style.display = 'block';
+        } else {
+            childrenAgesGroup.style.display = 'none';
+        }
+    });
+
     // Form submission handler
     form.addEventListener('submit', async function(e) {
         e.preventDefault();
 
+        const attendingValue = document.querySelector('input[name="attending"]:checked')?.value;
+
         // Collect form data
         const formData = {
-            name: document.getElementById('name').value,
-            email: document.getElementById('email').value,
-            phone: document.getElementById('phone').value,
-            guests: document.getElementById('guests').value,
-            attending: document.querySelector('input[name="attending"]:checked').value,
-            dietary: document.getElementById('dietary').value,
-            message: document.getElementById('message').value,
-            timestamp: new Date().toISOString()
+            // Basic info
+            fullName: document.getElementById('name').value.trim(),
+            email: document.getElementById('email').value.trim().toLowerCase(),
+            phone: document.getElementById('phone').value.trim() || null,
+
+            // Attendance
+            attending: attendingValue,
+            rsvpStatus: attendingValue === 'yes' ? 'confirmed' : 'declined',
+
+            // Guest details (only if attending)
+            guestCount: attendingValue === 'yes' ? parseInt(document.getElementById('guests').value) : 0,
+            guestNames: attendingValue === 'yes' ? (document.getElementById('guestNames').value.trim() || null) : null,
+            relationship: attendingValue === 'yes' ? (document.getElementById('relationship').value || null) : null,
+
+            // Meal preferences
+            mealPreference: attendingValue === 'yes' ? (document.getElementById('mealPreference').value || null) : null,
+            dietaryRestrictions: attendingValue === 'yes' ? (document.getElementById('dietary').value.trim() || null) : null,
+
+            // Children
+            childrenCount: attendingValue === 'yes' ? parseInt(document.getElementById('childrenCount').value) : 0,
+            childrenAges: attendingValue === 'yes' ? (document.getElementById('childrenAges').value.trim() || null) : null,
+
+            // Extras
+            songRequest: attendingValue === 'yes' ? (document.getElementById('songRequest').value.trim() || null) : null,
+            transportNeeded: attendingValue === 'yes' ? document.getElementById('transportNeeded').checked : false,
+            accommodationNeeded: attendingValue === 'yes' ? document.getElementById('accommodationNeeded').checked : false,
+            specialRequests: attendingValue === 'yes' ? (document.getElementById('specialRequests').value.trim() || null) : null,
+
+            // Message
+            message: document.getElementById('message').value.trim() || null,
+
+            // Metadata
+            submittedAt: new Date().toISOString(),
+            userAgent: navigator.userAgent,
+
+            // Admin fields (for future use)
+            inviteSentDate: null,
+            tableAssignment: null,
+            adminNotes: null,
+            lastUpdated: null,
+            checkedIn: false,
+            checkedInAt: null
         };
 
         // Disable submit button and show loading state
@@ -42,53 +115,55 @@ document.addEventListener('DOMContentLoaded', function() {
         formMessage.style.display = 'none';
 
         try {
-            // Simulate form submission (replace with actual backend endpoint)
+            // Submit to Firebase Firestore
             await submitRSVP(formData);
 
             // Show success message
-            showMessage('success', 'Thank you for your RSVP! We\'re excited to celebrate with you.');
+            const successMsg = formData.attending === 'yes'
+                ? "Thank you for your RSVP! We're so excited to celebrate with you!"
+                : "Thank you for letting us know. We'll miss you and hope to see you soon!";
+            showMessage('success', successMsg);
 
             // Reset form
             form.reset();
-
-            // Store RSVP in localStorage for backup
-            saveToLocalStorage(formData);
+            attendingFields.style.display = 'none';
+            guestNamesGroup.style.display = 'none';
+            childrenAgesGroup.style.display = 'none';
 
         } catch (error) {
-            // Show error message
             showMessage('error', 'Oops! Something went wrong. Please try again or contact us directly.');
             console.error('RSVP submission error:', error);
         } finally {
-            // Re-enable submit button
             submitBtn.disabled = false;
             btnText.style.display = 'inline';
             btnLoading.style.display = 'none';
         }
     });
 
-    // Function to simulate RSVP submission
+    // Function to submit RSVP to Firebase
     async function submitRSVP(data) {
-        // Simulate network delay
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        // Wait for Firebase to be ready
+        let attempts = 0;
+        while (!window.firebaseDb && attempts < 50) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            attempts++;
+        }
 
-        // Here you would typically send the data to your backend
-        // Example:
-        // const response = await fetch('/api/rsvp', {
-        //     method: 'POST',
-        //     headers: {
-        //         'Content-Type': 'application/json',
-        //     },
-        //     body: JSON.stringify(data)
-        // });
-        //
-        // if (!response.ok) {
-        //     throw new Error('Failed to submit RSVP');
-        // }
-        //
-        // return await response.json();
+        if (!window.firebaseDb) {
+            throw new Error('Firebase not initialized');
+        }
 
-        console.log('RSVP Data:', data);
-        return { success: true };
+        // Add document to Firestore
+        const docRef = await window.firebaseAddDoc(
+            window.firebaseCollection(window.firebaseDb, 'rsvps'),
+            {
+                ...data,
+                createdAt: window.firebaseServerTimestamp()
+            }
+        );
+
+        console.log('RSVP submitted with ID:', docRef.id);
+        return docRef;
     }
 
     // Function to display form messages
@@ -97,25 +172,12 @@ document.addEventListener('DOMContentLoaded', function() {
         formMessage.textContent = text;
         formMessage.style.display = 'block';
 
-        // Scroll to message
         formMessage.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
-        // Auto-hide success message after 5 seconds
         if (type === 'success') {
             setTimeout(() => {
                 formMessage.style.display = 'none';
-            }, 5000);
-        }
-    }
-
-    // Function to save RSVP to localStorage
-    function saveToLocalStorage(data) {
-        try {
-            let rsvps = JSON.parse(localStorage.getItem('rsvps') || '[]');
-            rsvps.push(data);
-            localStorage.setItem('rsvps', JSON.stringify(rsvps));
-        } catch (error) {
-            console.error('Error saving to localStorage:', error);
+            }, 8000);
         }
     }
 
@@ -161,11 +223,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const radioInputs = document.querySelectorAll('input[type="radio"]');
     radioInputs.forEach(radio => {
         radio.addEventListener('change', function() {
-            // Remove active class from all radio options
             document.querySelectorAll('.radio-option').forEach(option => {
                 option.classList.remove('active');
             });
-            // Add active class to selected option
             if (this.checked) {
                 this.closest('.radio-option').classList.add('active');
             }

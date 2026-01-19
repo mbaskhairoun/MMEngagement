@@ -12,6 +12,34 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Cormorant+Garamond:wght@300;400;500;600&family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-analytics.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBCtD1ZhcUND9bbOo1t7bqwiTB64asWVuY",
+            authDomain: "mmrsvps-95e2a.firebaseapp.com",
+            databaseURL: "https://mmrsvps-95e2a-default-rtdb.firebaseio.com",
+            projectId: "mmrsvps-95e2a",
+            storageBucket: "mmrsvps-95e2a.firebasestorage.app",
+            messagingSenderId: "404940644347",
+            appId: "1:404940644347:web:2bd0cc03c3832e8038b55e",
+            measurementId: "G-2BBH6CDRY2"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const analytics = getAnalytics(app);
+
+        // Make Firebase available globally
+        window.firebaseDb = db;
+        window.firebaseAddDoc = addDoc;
+        window.firebaseCollection = collection;
+        window.firebaseServerTimestamp = serverTimestamp;
+    </script>
 </head>
 <body>
     <div class="hero-section">
@@ -95,18 +123,6 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="guests">Number of Guests *</label>
-                    <select id="guests" name="guests" required>
-                        <option value="">Select number of guests</option>
-                        <option value="1">1 Guest</option>
-                        <option value="2">2 Guests</option>
-                        <option value="3">3 Guests</option>
-                        <option value="4">4 Guests</option>
-                        <option value="5">5+ Guests</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
                     <label class="attendance-label">Will you be attending? *</label>
                     <div class="radio-group">
                         <label class="radio-option">
@@ -120,9 +136,94 @@
                     </div>
                 </div>
 
-                <div class="form-group">
-                    <label for="dietary">Dietary Restrictions or Special Requirements</label>
-                    <textarea id="dietary" name="dietary" rows="3" placeholder="Please let us know of any allergies or dietary needs"></textarea>
+                <div id="attendingFields" style="display: none;">
+                    <div class="form-group">
+                        <label for="guests">Number of Guests (including yourself) *</label>
+                        <select id="guests" name="guests">
+                            <option value="1">1 (Just me)</option>
+                            <option value="2">2 Guests</option>
+                            <option value="3">3 Guests</option>
+                            <option value="4">4 Guests</option>
+                            <option value="5">5+ Guests</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" id="guestNamesGroup" style="display: none;">
+                        <label for="guestNames">Names of Additional Guests</label>
+                        <textarea id="guestNames" name="guestNames" rows="2" placeholder="Please list the names of your guests"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="relationship">Your Relationship to the Couple</label>
+                        <select id="relationship" name="relationship">
+                            <option value="">Select relationship</option>
+                            <option value="family-bride">Family of Marly</option>
+                            <option value="family-groom">Family of Baskha</option>
+                            <option value="friend-bride">Friend of Marly</option>
+                            <option value="friend-groom">Friend of Baskha</option>
+                            <option value="friend-both">Friend of Both</option>
+                            <option value="colleague">Colleague</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="mealPreference">Meal Preference</label>
+                        <select id="mealPreference" name="mealPreference">
+                            <option value="">Select preference</option>
+                            <option value="standard">Standard</option>
+                            <option value="vegetarian">Vegetarian</option>
+                            <option value="vegan">Vegan</option>
+                            <option value="halal">Halal</option>
+                            <option value="kosher">Kosher</option>
+                            <option value="gluten-free">Gluten-Free</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="dietary">Dietary Restrictions or Allergies</label>
+                        <textarea id="dietary" name="dietary" rows="2" placeholder="Please let us know of any allergies or dietary needs"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="childrenCount">Number of Children Attending</label>
+                        <select id="childrenCount" name="childrenCount">
+                            <option value="0">No children</option>
+                            <option value="1">1 Child</option>
+                            <option value="2">2 Children</option>
+                            <option value="3">3 Children</option>
+                            <option value="4">4+ Children</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" id="childrenAgesGroup" style="display: none;">
+                        <label for="childrenAges">Ages of Children</label>
+                        <input type="text" id="childrenAges" name="childrenAges" placeholder="e.g., 3, 7, 12">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="songRequest">Song Request for the Celebration</label>
+                        <input type="text" id="songRequest" name="songRequest" placeholder="What song gets you on the dance floor?">
+                    </div>
+
+                    <div class="form-group checkbox-group">
+                        <label class="checkbox-option">
+                            <input type="checkbox" id="transportNeeded" name="transportNeeded">
+                            <span>I may need transportation assistance</span>
+                        </label>
+                    </div>
+
+                    <div class="form-group checkbox-group">
+                        <label class="checkbox-option">
+                            <input type="checkbox" id="accommodationNeeded" name="accommodationNeeded">
+                            <span>I may need accommodation recommendations</span>
+                        </label>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="specialRequests">Special Requests or Accessibility Needs</label>
+                        <textarea id="specialRequests" name="specialRequests" rows="2" placeholder="Wheelchair access, seating preferences, etc."></textarea>
+                    </div>
                 </div>
 
                 <div class="form-group">
