@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Marly & Baskha RSVP</title>
+    <link rel="stylesheet" href="admin.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, setDoc, getDoc, query, orderBy, serverTimestamp, writeBatch } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js";
+        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBCtD1ZhcUND9bbOo1t7bqwiTB64asWVuY",
+            authDomain: "mmrsvps-95e2a.firebaseapp.com",
+            databaseURL: "https://mmrsvps-95e2a-default-rtdb.firebaseio.com",
+            projectId: "mmrsvps-95e2a",
+            storageBucket: "mmrsvps-95e2a.firebasestorage.app",
+            messagingSenderId: "404940644347",
+            appId: "1:404940644347:web:2bd0cc03c3832e8038b55e",
+            measurementId: "G-2BBH6CDRY2"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        // Make Firebase available globally
+        window.firebaseDb = db;
+        window.firebaseAuth = auth;
+        window.firebaseCollection = collection;
+        window.firebaseAddDoc = addDoc;
+        window.firebaseGetDocs = getDocs;
+        window.firebaseDoc = doc;
+        window.firebaseUpdateDoc = updateDoc;
+        window.firebaseDeleteDoc = deleteDoc;
+        window.firebaseSetDoc = setDoc;
+        window.firebaseGetDoc = getDoc;
+        window.firebaseQuery = query;
+        window.firebaseOrderBy = orderBy;
+        window.firebaseServerTimestamp = serverTimestamp;
+        window.firebaseWriteBatch = writeBatch;
+        window.firebaseSignIn = signInWithEmailAndPassword;
+        window.firebaseSignOut = signOut;
+        window.firebaseOnAuthStateChanged = onAuthStateChanged;
+    </script>
+
+    <!-- SheetJS for Excel parsing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+    <!-- Login Section -->
+    <div id="loginSection" class="login-section">
+        <div class="login-card">
+            <div class="login-header">
+                <img src="Logo.jpeg" alt="Logo" class="login-logo">
+                <h1>Admin Login</h1>
+                <p>Marly & Baskha RSVP Management</p>
+            </div>
+            <form id="loginForm" class="login-form">
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="loginEmail" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="loginPassword" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Sign In</button>
+                <div id="loginError" class="error-message"></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Dashboard Section -->
+    <div id="dashboardSection" class="dashboard-section" style="display: none;">
+        <header class="dashboard-header">
+            <div class="header-left">
+                <img src="Logo.jpeg" alt="Logo" class="header-logo">
+                <h1>RSVP Admin</h1>
+            </div>
+            <div class="header-right">
+                <span id="userEmail"></span>
+                <button id="logoutBtn" class="btn btn-secondary">Logout</button>
+            </div>
+        </header>
+
+        <nav class="dashboard-nav">
+            <button class="nav-tab active" data-tab="guests">Guest List</button>
+            <button class="nav-tab" data-tab="settings">Form Settings</button>
+            <button class="nav-tab" data-tab="rsvps">RSVPs</button>
+        </nav>
+
+        <main class="dashboard-content">
+            <!-- Guest List Tab -->
+            <div id="guestsTab" class="tab-content active">
+                <div class="tab-header">
+                    <h2>Guest List</h2>
+                    <div class="tab-actions">
+                        <button id="downloadTemplateBtn" class="btn btn-secondary">Download Template</button>
+                        <label class="btn btn-secondary upload-btn">
+                            Upload Excel/CSV
+                            <input type="file" id="uploadFile" accept=".xlsx,.xls,.csv" hidden>
+                        </label>
+                        <button id="addGuestBtn" class="btn btn-primary">+ Add Guest</button>
+                    </div>
+                </div>
+
+                <div class="search-bar">
+                    <input type="text" id="guestSearch" placeholder="Search guests...">
+                    <div class="guest-stats">
+                        <span id="totalGuests">0</span> guests |
+                        <span id="rsvpedGuests">0</span> RSVPed
+                    </div>
+                </div>
+
+                <!-- Upload Preview Modal -->
+                <div id="uploadPreview" class="modal" style="display: none;">
+                    <div class="modal-content modal-large">
+                        <div class="modal-header">
+                            <h3>Import Preview</h3>
+                            <button class="modal-close">&times;</button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="import-options">
+                                <label class="radio-option">
+                                    <input type="radio" name="importMode" value="append" checked>
+                                    <span>Add to existing guests</span>
+                                </label>
+                                <label class="radio-option">
+                                    <input type="radio" name="importMode" value="replace">
+                                    <span>Replace all guests</span>
+                                </label>
+                            </div>
+                            <div class="preview-table-container">
+                                <table id="previewTable" class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Name</th>
+                                            <th>Email</th>
+                                            <th>Max Guests</th>
+                                            <th>Notes</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                            <p id="previewCount"></p>
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn btn-secondary modal-cancel">Cancel</button>
+                            <button id="confirmImportBtn" class="btn btn-primary">Import Guests</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Add/Edit Guest Modal -->
+                <div id="guestModal" class="modal" style="display: none;">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3 id="guestModalTitle">Add Guest</h3>
+                            <button class="modal-close">&times;</button>
+                        </div>
+                        <form id="guestForm" class="modal-body">
+                            <input type="hidden" id="guestId">
+                            <div class="form-group">
+                                <label for="guestName">Name *</label>
+                                <input type="text" id="guestName" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="guestEmail">Email</label>
+                                <input type="email" id="guestEmail">
+                            </div>
+                            <div class="form-group">
+                                <label for="maxGuests">Max Guests Allowed</label>
+                                <select id="maxGuests">
+                                    <option value="1">1</option>
+                                    <option value="2" selected>2</option>
+                                    <option value="3">3</option>
+                                    <option value="4">4</option>
+                                    <option value="5">5</option>
+                                    <option value="6">6</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="guestNotes">Notes</label>
+                                <textarea id="guestNotes" rows="2"></textarea>
+                            </div>
+                        </form>
+                        <div class="modal-footer">
+                            <button class="btn btn-secondary modal-cancel">Cancel</button>
+                            <button id="saveGuestBtn" class="btn btn-primary">Save</button>
+                        </div>
+                    </div>
+                </div>
+
+                <table id="guestsTable" class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Max Guests</th>
+                            <th>RSVP Status</th>
+                            <th>Notes</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="guestsTableBody">
+                        <tr><td colspan="6" class="loading">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Form Settings Tab -->
+            <div id="settingsTab" class="tab-content">
+                <div class="tab-header">
+                    <h2>Form Settings</h2>
+                    <button id="saveSettingsBtn" class="btn btn-primary">Save Settings</button>
+                </div>
+
+                <div class="settings-card">
+                    <h3>Visible Form Fields</h3>
+                    <p class="settings-description">Toggle which fields guests will see when RSVPing</p>
+
+                    <div class="settings-grid">
+                        <label class="toggle-option">
+                            <input type="checkbox" id="field-phone" checked>
+                            <span class="toggle-label">Phone Number</span>
+                        </label>
+
+                        <label class="toggle-option">
+                            <input type="checkbox" id="field-guestNames" checked>
+                            <span class="toggle-label">Additional Guest Names</span>
+                        </label>
+
+                        <label class="toggle-option">
+                            <input type="checkbox" id="field-relationship" checked>
+                            <span class="toggle-label">Relationship to Couple</span>
+                        </label>
+
+                        <label class="toggle-option">
+                            <input type="checkbox" id="field-mealPreference" checked>
+                            <span class="toggle-label">Meal Preference</span>
+                        </label>
+
+                        <label class="toggle-option">
+                            <input type="checkbox" id="field-dietary" checked>
+                            <span class="toggle-label">Dietary Restrictions</span>
+                        </label>
+
+                        <label class="toggle-option">
+                            <input type="checkbox" id="field-childrenCount" checked>
+                            <span class="toggle-label">Children Count</span>
+                        </label>
+
+                        <label class="toggle-option">
+                            <input type="checkbox" id="field-songRequest" checked>
+                            <span class="toggle-label">Song Request</span>
+                        </label>
+
+                        <label class="toggle-option">
+                            <input type="checkbox" id="field-transportNeeded">
+                            <span class="toggle-label">Transportation Needed</span>
+                        </label>
+
+                        <label class="toggle-option">
+                            <input type="checkbox" id="field-accommodationNeeded">
+                            <span class="toggle-label">Accommodation Needed</span>
+                        </label>
+
+                        <label class="toggle-option">
+                            <input type="checkbox" id="field-specialRequests" checked>
+                            <span class="toggle-label">Special Requests</span>
+                        </label>
+
+                        <label class="toggle-option">
+                            <input type="checkbox" id="field-message" checked>
+                            <span class="toggle-label">Message to Couple</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div id="settingsMessage" class="success-message" style="display: none;"></div>
+            </div>
+
+            <!-- RSVPs Tab -->
+            <div id="rsvpsTab" class="tab-content">
+                <div class="tab-header">
+                    <h2>RSVP Responses</h2>
+                    <button id="exportRsvpsBtn" class="btn btn-secondary">Export to CSV</button>
+                </div>
+
+                <div class="rsvp-stats">
+                    <div class="stat-card">
+                        <span class="stat-number" id="totalRsvps">0</span>
+                        <span class="stat-label">Total RSVPs</span>
+                    </div>
+                    <div class="stat-card attending">
+                        <span class="stat-number" id="attendingCount">0</span>
+                        <span class="stat-label">Attending</span>
+                    </div>
+                    <div class="stat-card declined">
+                        <span class="stat-number" id="declinedCount">0</span>
+                        <span class="stat-label">Declined</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-number" id="totalGuestsCount">0</span>
+                        <span class="stat-label">Total Guests</span>
+                    </div>
+                </div>
+
+                <table id="rsvpsTable" class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Attending</th>
+                            <th>Guests</th>
+                            <th>Meal</th>
+                            <th>Dietary</th>
+                            <th>Message</th>
+                            <th>Submitted</th>
+                        </tr>
+                    </thead>
+                    <tbody id="rsvpsTableBody">
+                        <tr><td colspan="8" class="loading">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    <script src="admin.js"></script>
+</body>
+</html>

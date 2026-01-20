@@ -505,6 +505,80 @@ body {
     }
 }
 
+/* Verification Step */
+.verification-content {
+    text-align: center;
+}
+
+.verification-intro {
+    font-family: var(--font-secondary);
+    font-size: 1.2rem;
+    color: var(--text-light);
+    margin-bottom: 2rem;
+}
+
+#verificationStep .form-group {
+    max-width: 400px;
+    margin: 0 auto 1.5rem;
+}
+
+#verificationStep .submit-btn {
+    max-width: 400px;
+}
+
+/* Welcome Header */
+.welcome-header {
+    text-align: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 2px solid var(--sage-green);
+}
+
+.welcome-name {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    color: var(--primary-green);
+    margin-bottom: 0.5rem;
+}
+
+.welcome-name span {
+    color: var(--deep-green);
+}
+
+.editing-notice {
+    background: #fff3cd;
+    color: #856404;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    margin-bottom: 1rem;
+}
+
+.change-guest-btn {
+    background: none;
+    border: none;
+    color: var(--primary-green);
+    font-size: 0.9rem;
+    cursor: pointer;
+    text-decoration: underline;
+    font-family: var(--font-body);
+}
+
+.change-guest-btn:hover {
+    color: var(--deep-green);
+}
+
+/* Hidden field styling */
+.form-group.hidden {
+    display: none !important;
+}
+
+/* Readonly input styling */
+input[readonly] {
+    background: var(--light-gray);
+    cursor: not-allowed;
+}
+
 .submit-btn {
     width: 100%;
     padding: 16px;

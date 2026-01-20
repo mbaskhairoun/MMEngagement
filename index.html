@@ -16,7 +16,7 @@
     <!-- Firebase SDK -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, getDocs, doc, getDoc, updateDoc, query, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js";
         import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-analytics.js";
 
         const firebaseConfig = {
@@ -37,7 +37,13 @@
         // Make Firebase available globally
         window.firebaseDb = db;
         window.firebaseAddDoc = addDoc;
+        window.firebaseGetDocs = getDocs;
+        window.firebaseDoc = doc;
+        window.firebaseGetDoc = getDoc;
+        window.firebaseUpdateDoc = updateDoc;
         window.firebaseCollection = collection;
+        window.firebaseQuery = query;
+        window.firebaseWhere = where;
         window.firebaseServerTimestamp = serverTimestamp;
     </script>
 </head>
@@ -106,10 +112,36 @@
             <h2 class="section-title">RSVP</h2>
             <p class="rsvp-subtitle">Please let us know if you'll be joining us</p>
 
-            <form id="rsvpForm" class="rsvp-form">
+            <!-- Step 1: Name Verification -->
+            <div id="verificationStep" class="rsvp-form">
+                <div class="verification-content">
+                    <p class="verification-intro">Please enter your name as it appears on your invitation</p>
+                    <div class="form-group">
+                        <label for="verifyName">Your Full Name *</label>
+                        <input type="text" id="verifyName" placeholder="Enter your name" required>
+                    </div>
+                    <button type="button" id="verifyBtn" class="submit-btn">
+                        <span class="btn-text">Find My Invitation</span>
+                        <span class="btn-loading" style="display: none;">Searching...</span>
+                    </button>
+                    <div id="verifyError" class="form-message error" style="display: none;"></div>
+                </div>
+            </div>
+
+            <!-- Step 2: RSVP Form (hidden until verified) -->
+            <form id="rsvpForm" class="rsvp-form" style="display: none;">
+                <div id="welcomeHeader" class="welcome-header">
+                    <p class="welcome-name">Welcome, <span id="guestDisplayName"></span>!</p>
+                    <p id="editingNotice" class="editing-notice" style="display: none;">You've already submitted an RSVP. You can update your response below.</p>
+                    <button type="button" id="changeGuestBtn" class="change-guest-btn">Not you? Click here</button>
+                </div>
+
+                <input type="hidden" id="guestDocId">
+                <input type="hidden" id="existingRsvpId">
+
                 <div class="form-group">
                     <label for="name">Full Name *</label>
-                    <input type="text" id="name" name="name" required>
+                    <input type="text" id="name" name="name" required readonly>
                 </div>
 
                 <div class="form-group">
