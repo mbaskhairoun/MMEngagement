@@ -134,7 +134,8 @@ body {
     padding: 8px;
     background: rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(10px);
-    filter: sepia(20%) contrast(1.05);
+    -webkit-filter: sepia(40%) contrast(1.1) brightness(1.05) saturate(0.8) grayscale(10%);
+    filter: sepia(40%) contrast(1.1) brightness(1.05) saturate(0.8) grayscale(10%);
 }
 
 .couple-names {
