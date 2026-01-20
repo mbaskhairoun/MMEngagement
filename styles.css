@@ -156,15 +156,16 @@ body {
 }
 
 .divider::before {
-    content: '♦';
+    content: '';
     position: absolute;
     left: 50%;
     top: 50%;
     transform: translate(-50%, -50%);
-    color: var(--gold);
-    font-size: 0.8rem;
-    background: var(--black);
-    padding: 0 15px;
+    width: 8px;
+    height: 8px;
+    background: var(--gold);
+    border-radius: 1px;
+    transform: translate(-50%, -50%) rotate(45deg);
 }
 
 .divider::after {
@@ -865,6 +866,15 @@ input[readonly] {
         padding: 0 20px;
     }
 
+    .divider {
+        width: 150px;
+    }
+
+    .divider::before {
+        width: 6px;
+        height: 6px;
+    }
+
     .logo {
         width: 100px;
         height: 100px;
@@ -974,6 +984,15 @@ input[readonly] {
 
     .tagline {
         font-size: 1rem;
+    }
+
+    .divider {
+        width: 120px;
+    }
+
+    .divider::before {
+        width: 5px;
+        height: 5px;
     }
 
     .logo {
