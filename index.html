@@ -141,7 +141,7 @@
             </div>
             <h1 class="couple-names">Marly & Michael</h1>
             <div class="divider"></div>
-            <p class="tagline">Together with joy in our hearts, we invite you to celebrate our engagement</p>
+            <!-- <p class="tagline">Together with joy in our hearts, we invite you to celebrate our engagement</p> -->
         </div>
         <div class="scroll-indicator">
             <span>↓</span>
@@ -151,7 +151,7 @@
     <section class="story-section">
         <div class="container">
             <div class="story-content">
-                <h2 class="section-title">Our Story</h2>
+                <h2 class="section-title">we invite you to celebrate our engagement</h2>
                 <div class="story-image-wrapper">
                     <div class="image-carousel">
                         <div class="carousel-slide">
@@ -188,7 +188,7 @@
                 <div class="detail-card">
                     <div class="detail-icon">📅</div>
                     <h3>Date</h3>
-                    <p>May 24th, 2025</p>
+                    <p>May 24th, 2026</p>
                 </div>
                 <div class="detail-card">
                     <div class="detail-icon">⏰</div>
@@ -205,6 +205,27 @@
                     <h3>Dress Code</h3>
                     <p>Spring Semi-Formal</p>
                     <p>Whatever that means🙄</p>
+                </div>
+            </div>
+
+            <div class="countdown-wrapper">
+                <div class="countdown" id="countdown">
+                    <div class="countdown-unit">
+                        <span class="countdown-number" id="countDays">0</span>
+                        <span class="countdown-label">Days</span>
+                    </div>
+                    <div class="countdown-unit">
+                        <span class="countdown-number" id="countHours">0</span>
+                        <span class="countdown-label">Hours</span>
+                    </div>
+                    <div class="countdown-unit">
+                        <span class="countdown-number" id="countMinutes">0</span>
+                        <span class="countdown-label">Minutes</span>
+                    </div>
+                    <div class="countdown-unit">
+                        <span class="countdown-number" id="countSeconds">0</span>
+                        <span class="countdown-label">Seconds</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -243,11 +264,6 @@
                 <input type="hidden" id="existingRsvpId">
 
                 <div class="form-group">
-                    <label for="name">Full Name *</label>
-                    <input type="text" id="name" name="name" required readonly>
-                </div>
-
-                <div class="form-group">
                     <label for="email">Email Address *</label>
                     <input type="email" id="email" name="email" required>
                 </div>
@@ -271,13 +287,14 @@
                     </div>
                 </div>
 
-                <div id="attendingFields" style="display: none;">
-                    <div class="form-group" id="householdMembersGroup">
-                        <label class="attendance-label">Who will be attending?</label>
-                        <div id="householdMembersList" class="household-checklist">
-                            <!-- Populated dynamically by script.js -->
-                        </div>
+                <div class="form-group" id="householdMembersGroup">
+                    <label class="attendance-label">Who will be attending?</label>
+                    <div id="householdMembersList" class="household-checklist">
+                        <!-- Populated dynamically by script.js -->
                     </div>
+                </div>
+
+                <div id="attendingFields" style="display: none;">
 
                     <div class="form-group">
                         <label for="relationship">Your Relationship to the Couple</label>
@@ -385,13 +402,49 @@
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const slides = document.querySelectorAll('.carousel-slide');
-            let current = 0;
-            setInterval(function() {
-                slides[current].classList.remove('active');
-                current = (current + 1) % slides.length;
-                slides[current].classList.add('active');
-            }, 2000);
+            if (slides.length > 0) {
+                slides[0].classList.add('active');
+                let current = 0;
+                setInterval(function() {
+                    slides[current].classList.remove('active');
+                    current = (current + 1) % slides.length;
+                    slides[current].classList.add('active');
+                }, 2000);
+            }
         });
+    </script>
+
+    <!-- Countdown -->
+    <script>
+        (function() {
+            const eventDate = new Date('2026-05-24T18:00:00');
+
+            function update() {
+                const now = new Date();
+                const diff = eventDate - now;
+
+                if (diff <= 0) {
+                    document.getElementById('countDays').textContent = '0';
+                    document.getElementById('countHours').textContent = '0';
+                    document.getElementById('countMinutes').textContent = '0';
+                    document.getElementById('countSeconds').textContent = '0';
+                    return;
+                }
+
+                const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+                document.getElementById('countDays').textContent = days;
+                document.getElementById('countHours').textContent = hours;
+                document.getElementById('countMinutes').textContent = minutes;
+                document.getElementById('countSeconds').textContent = seconds;
+            }
+
+            update();
+            setInterval(update, 1000);
+        })();
     </script>
 </body>
 </html>

@@ -267,7 +267,6 @@ function showRsvpForm() {
     const rsvpForm = document.getElementById('rsvpForm');
     const guestDisplayName = document.getElementById('guestDisplayName');
     const editingNotice = document.getElementById('editingNotice');
-    const nameInput = document.getElementById('name');
     const guestDocIdInput = document.getElementById('guestDocId');
     const existingRsvpIdInput = document.getElementById('existingRsvpId');
 
@@ -275,10 +274,9 @@ function showRsvpForm() {
     verificationStep.style.display = 'none';
     rsvpForm.style.display = 'block';
 
-    // Set guest info - show the verified person's name, not the invitation name
+    // Set guest info - show the verified person's name
     const displayName = verifiedMemberName || currentGuest.name;
     guestDisplayName.textContent = displayName;
-    nameInput.value = currentGuest.name;
     guestDocIdInput.value = currentGuest.id;
 
     // Render household member checkboxes
@@ -313,13 +311,17 @@ function renderHouseholdCheckboxes(guest) {
 
     const verifiedLower = (verifiedMemberName || '').toLowerCase();
 
-    container.innerHTML = allMembers.map(member => {
+    container.innerHTML = allMembers.map((member, idx) => {
         const isYou = member.toLowerCase() === verifiedLower;
+        const escaped = escapeHtml(member);
         return `
-        <label class="checkbox-option household-member-check">
-            <input type="checkbox" name="attendingMember" value="${escapeHtml(member)}" checked>
-            <span>${escapeHtml(member)}${isYou ? ' (You)' : ''}</span>
-        </label>
+        <div class="household-member-row">
+            <label class="checkbox-option household-member-check">
+                <input type="checkbox" name="attendingMember" value="${escaped}" checked>
+                <span>${escaped}${isYou ? ' (You)' : ''}</span>
+            </label>
+            <input type="email" name="memberEmail" data-member="${escaped}" class="member-email-input" placeholder="Email (optional)">
+        </div>
     `}).join('');
 }
 
@@ -356,10 +358,18 @@ function populateFormWithExistingRsvp() {
         }
     }
 
-    // Set attending members checkboxes
+    // Set attending members checkboxes and emails
     if (rsvp.attendingMembers && rsvp.attendingMembers.length > 0) {
         document.querySelectorAll('input[name="attendingMember"]').forEach(cb => {
             cb.checked = rsvp.attendingMembers.includes(cb.value);
+        });
+    }
+    if (rsvp.memberEmails) {
+        document.querySelectorAll('input[name="memberEmail"]').forEach(input => {
+            const member = input.dataset.member;
+            if (rsvp.memberEmails[member]) {
+                input.value = rsvp.memberEmails[member];
+            }
         });
     }
 
@@ -469,13 +479,23 @@ function initializeFormHandlers() {
             ? Array.from(document.querySelectorAll('input[name="attendingMember"]:checked')).map(cb => cb.value)
             : [];
 
+        // Collect member emails
+        const memberEmails = {};
+        document.querySelectorAll('input[name="memberEmail"]').forEach(input => {
+            const email = input.value.trim().toLowerCase();
+            if (email) {
+                memberEmails[input.dataset.member] = email;
+            }
+        });
+
         // Collect form data
         const formData = {
             // Link to guest
             guestId: document.getElementById('guestDocId').value,
 
             // Basic info
-            fullName: document.getElementById('name').value.trim(),
+            invitationName: currentGuest.name,
+            fullName: verifiedMemberName || currentGuest.name,
             email: document.getElementById('email').value.trim().toLowerCase(),
             phone: document.getElementById('phone').value.trim() || null,
 
@@ -486,6 +506,7 @@ function initializeFormHandlers() {
             // Household attendance
             attendingMembers: attendingMembers,
             totalAttending: attendingMembers.length,
+            memberEmails: memberEmails,
 
             // Guest details (only if attending)
             relationship: attendingValue === 'yes' ? (document.getElementById('relationship').value || null) : null,

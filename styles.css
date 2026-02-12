@@ -297,7 +297,7 @@ body {
 
 .story-text {
     font-family: var(--font-display);
-    font-size: 1.3rem;
+    font-size: 1.6rem;
     line-height: 2;
     color: var(--charcoal);
     margin-top: 3rem;
@@ -309,7 +309,7 @@ body {
 
 .story-verse-ref {
     font-family: var(--font-display);
-    font-size: 0.9rem;
+    font-size: 1rem;
     color: var(--gold-dark);
     letter-spacing: 2px;
     text-transform: uppercase;
@@ -389,6 +389,87 @@ body {
 
 .detail-card a:hover {
     color: var(--gold);
+}
+
+/* ============================================
+   Countdown
+   ============================================ */
+.countdown-wrapper {
+    margin-top: 4rem;
+    padding-top: 3rem;
+    border-top: 1px solid rgba(212, 175, 55, 0.2);
+}
+
+.countdown {
+    display: flex;
+    justify-content: center;
+    gap: 3rem;
+}
+
+.countdown-unit {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+}
+
+.countdown-number {
+    font-family: var(--font-display);
+    font-size: 3.5rem;
+    font-weight: 300;
+    color: var(--gold);
+    line-height: 1;
+    letter-spacing: 2px;
+}
+
+.countdown-label {
+    font-family: var(--font-display);
+    font-size: 0.75rem;
+    color: var(--cream-dark);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-top: 0.75rem;
+}
+
+.countdown-unit + .countdown-unit::before {
+    content: ':';
+    position: absolute;
+    left: -1.7rem;
+    top: 0.3rem;
+    font-family: var(--font-display);
+    font-size: 2.5rem;
+    font-weight: 300;
+    color: rgba(212, 175, 55, 0.4);
+}
+
+@media (max-width: 768px) {
+    .countdown {
+        gap: 2rem;
+    }
+    .countdown-number {
+        font-size: 2.5rem;
+    }
+    .countdown-unit + .countdown-unit::before {
+        left: -1.2rem;
+        font-size: 2rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .countdown {
+        gap: 1.5rem;
+    }
+    .countdown-number {
+        font-size: 2rem;
+    }
+    .countdown-label {
+        font-size: 0.65rem;
+        letter-spacing: 2px;
+    }
+    .countdown-unit + .countdown-unit::before {
+        left: -1rem;
+        font-size: 1.5rem;
+    }
 }
 
 /* ============================================
@@ -717,8 +798,38 @@ body {
     gap: 0.75rem;
 }
 
+.household-member-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
 .household-member-check {
     border-radius: 8px;
+}
+
+.member-email-input {
+    width: 100%;
+    padding: 10px 14px;
+    border: none;
+    border-bottom: 1px solid var(--gray-light);
+    background: transparent;
+    font-family: var(--font-display);
+    font-size: 0.95rem;
+    color: var(--black);
+    margin-left: 30px;
+    width: calc(100% - 30px);
+    transition: border-color 0.3s;
+}
+
+.member-email-input:focus {
+    outline: none;
+    border-bottom-color: var(--gold);
+}
+
+.member-email-input::placeholder {
+    color: var(--gray-light);
+    font-style: italic;
 }
 
 /* Hidden fields */
