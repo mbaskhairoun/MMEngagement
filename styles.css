@@ -307,6 +307,16 @@ body {
     margin-right: auto;
 }
 
+.story-verse-ref {
+    font-family: var(--font-display);
+    font-size: 0.9rem;
+    color: var(--gold-dark);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-top: 0.5rem;
+    text-align: center;
+}
+
 /* ============================================
    Event Details Section
    ============================================ */
