@@ -22,6 +22,23 @@ exports.handler = async (event) => {
             return { statusCode: 400, body: JSON.stringify({ error: "Missing required fields: to, subject, html" }) };
         }
 
+        // Strip HTML tags to generate plain text version
+        const text = html
+            .replace(/<br\s*\/?>/gi, '\n')
+            .replace(/<\/p>/gi, '\n\n')
+            .replace(/<\/div>/gi, '\n')
+            .replace(/<\/h[1-6]>/gi, '\n\n')
+            .replace(/<li>/gi, '- ')
+            .replace(/<[^>]+>/g, '')
+            .replace(/&amp;/g, '&')
+            .replace(/&lt;/g, '<')
+            .replace(/&gt;/g, '>')
+            .replace(/&quot;/g, '"')
+            .replace(/&#39;/g, "'")
+            .replace(/&nbsp;/g, ' ')
+            .replace(/\n{3,}/g, '\n\n')
+            .trim();
+
         const response = await fetch("https://api.mailersend.com/v1/email", {
             method: "POST",
             headers: {
@@ -35,7 +52,8 @@ exports.handler = async (event) => {
                 },
                 to: to,
                 subject: subject,
-                html: html
+                html: html,
+                text: text
             })
         });
 
