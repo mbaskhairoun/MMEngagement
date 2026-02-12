@@ -98,6 +98,7 @@
             <button class="nav-tab" data-tab="settings">Form Settings</button>
             <button class="nav-tab" data-tab="rsvps">RSVPs</button>
             <button class="nav-tab" data-tab="analytics">Analytics</button>
+            <button class="nav-tab" data-tab="email">Email</button>
         </nav>
 
         <main class="dashboard-content">
@@ -386,6 +387,62 @@
                         <h3>Family Size Distribution</h3>
                         <canvas id="familySizeChart"></canvas>
                     </div>
+                </div>
+            </div>
+
+            <!-- Email Tab -->
+            <div id="emailTab" class="tab-content">
+                <div class="tab-header">
+                    <h2>Send Email</h2>
+                </div>
+
+                <div class="email-compose">
+                    <div class="email-section">
+                        <h3>Recipients</h3>
+                        <div class="recipient-filters">
+                            <button class="btn btn-secondary btn-small recipient-filter active" data-filter="all">All with Email</button>
+                            <button class="btn btn-secondary btn-small recipient-filter" data-filter="attending">Attending</button>
+                            <button class="btn btn-secondary btn-small recipient-filter" data-filter="declined">Declined</button>
+                            <button class="btn btn-secondary btn-small recipient-filter" data-filter="pending">Pending</button>
+                        </div>
+                        <div class="recipient-actions">
+                            <button id="selectAllRecipients" class="btn btn-secondary btn-small">Select All</button>
+                            <button id="deselectAllRecipients" class="btn btn-secondary btn-small">Deselect All</button>
+                            <span class="recipient-count"><span id="selectedCount">0</span> selected</span>
+                        </div>
+                        <div id="recipientList" class="recipient-list">
+                            <p class="loading">Loading guests...</p>
+                        </div>
+
+                        <div class="custom-recipient-section">
+                            <h4>Add Custom Recipients</h4>
+                            <div class="custom-recipient-input">
+                                <input type="text" id="customRecipientName" placeholder="Name">
+                                <input type="email" id="customRecipientEmail" placeholder="Email">
+                                <button type="button" id="addCustomRecipient" class="btn btn-secondary btn-small">+ Add</button>
+                            </div>
+                            <div id="customRecipientList" class="custom-recipient-list"></div>
+                        </div>
+                    </div>
+
+                    <div class="email-section">
+                        <h3>Compose</h3>
+                        <div class="form-group">
+                            <label for="emailFrom">From</label>
+                            <input type="text" id="emailFrom" value="Marly & Michael <info@marlybaskha.ca>" readonly style="color: #666; cursor: default;">
+                        </div>
+                        <div class="form-group">
+                            <label for="emailSubject">Subject *</label>
+                            <input type="text" id="emailSubject" placeholder="Email subject line">
+                        </div>
+                        <div class="form-group">
+                            <label for="emailBody">Message *</label>
+                            <textarea id="emailBody" rows="12" placeholder="Write your email message here... HTML is supported."></textarea>
+                        </div>
+                    </div>
+
+                    <button id="sendEmailBtn" class="btn btn-primary btn-large">Send Email</button>
+                    <div id="emailStatus" class="email-status" style="display: none;"></div>
                 </div>
             </div>
         </main>

@@ -74,6 +74,9 @@ function initializeAdmin() {
             if (tab.dataset.tab === 'analytics') {
                 renderAnalytics();
             }
+            if (tab.dataset.tab === 'email') {
+                renderEmailTab();
+            }
         });
     });
 
@@ -82,6 +85,7 @@ function initializeAdmin() {
     initializeSettingsHandlers();
     initializeRsvpHandlers();
     initializeUploadHandlers();
+    initializeEmailHandlers();
 }
 
 // ============================================
@@ -954,4 +958,271 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+}
+
+// ============================================
+// Email Tab
+// ============================================
+
+let emailRecipientFilter = 'all';
+let customRecipients = [];
+
+function initializeEmailHandlers() {
+    // Filter buttons
+    document.querySelectorAll('.recipient-filter').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.recipient-filter').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            emailRecipientFilter = btn.dataset.filter;
+            renderEmailTab();
+        });
+    });
+
+    // Select all / deselect all
+    const selectAllBtn = document.getElementById('selectAllRecipients');
+    const deselectAllBtn = document.getElementById('deselectAllRecipients');
+
+    if (selectAllBtn) {
+        selectAllBtn.addEventListener('click', () => {
+            document.querySelectorAll('#recipientList input[type="checkbox"]').forEach(cb => {
+                cb.checked = true;
+            });
+            updateSelectedCount();
+        });
+    }
+
+    if (deselectAllBtn) {
+        deselectAllBtn.addEventListener('click', () => {
+            document.querySelectorAll('#recipientList input[type="checkbox"]').forEach(cb => {
+                cb.checked = false;
+            });
+            updateSelectedCount();
+        });
+    }
+
+    // Send button
+    const sendBtn = document.getElementById('sendEmailBtn');
+    if (sendBtn) {
+        sendBtn.addEventListener('click', handleSendEmail);
+    }
+
+    // Custom recipient
+    const addCustomBtn = document.getElementById('addCustomRecipient');
+    const customEmailInput = document.getElementById('customRecipientEmail');
+    const customNameInput = document.getElementById('customRecipientName');
+
+    if (addCustomBtn) {
+        addCustomBtn.addEventListener('click', addCustomRecipient);
+        customEmailInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') { e.preventDefault(); addCustomRecipient(); }
+        });
+        customNameInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') { e.preventDefault(); addCustomRecipient(); }
+        });
+    }
+}
+
+function addCustomRecipient() {
+    const nameInput = document.getElementById('customRecipientName');
+    const emailInput = document.getElementById('customRecipientEmail');
+    const email = emailInput.value.trim();
+    const name = nameInput.value.trim() || email;
+
+    if (!email) return;
+
+    // Avoid duplicates
+    if (customRecipients.some(r => r.email.toLowerCase() === email.toLowerCase())) return;
+
+    customRecipients.push({ name, email });
+    nameInput.value = '';
+    emailInput.value = '';
+    nameInput.focus();
+    renderCustomRecipients();
+    updateSelectedCount();
+}
+
+function renderCustomRecipients() {
+    const container = document.getElementById('customRecipientList');
+    if (!container) return;
+
+    container.innerHTML = customRecipients.map((r, idx) => `
+        <span class="custom-recipient-chip">
+            ${escapeHtml(r.name)} &lt;${escapeHtml(r.email)}&gt;
+            <button class="remove-chip" data-idx="${idx}">&times;</button>
+        </span>
+    `).join('');
+
+    container.querySelectorAll('.remove-chip').forEach(btn => {
+        btn.addEventListener('click', () => {
+            customRecipients.splice(parseInt(btn.dataset.idx), 1);
+            renderCustomRecipients();
+            updateSelectedCount();
+        });
+    });
+}
+
+function renderEmailTab() {
+    const container = document.getElementById('recipientList');
+    if (!container) return;
+
+    // Build a map of guestId -> rsvp status
+    const rsvpMap = {};
+    allRsvps.forEach(r => {
+        rsvpMap[r.guestId] = r.rsvpStatus || (r.attending === 'yes' ? 'confirmed' : 'declined');
+    });
+
+    // Collect all recipients: guests with emails + member emails from RSVPs
+    let recipients = [];
+
+    allGuests.forEach(guest => {
+        const status = rsvpMap[guest.id] || 'pending';
+
+        // Add guest-level email
+        if (guest.email) {
+            recipients.push({
+                name: guest.name,
+                email: guest.email,
+                status: status,
+                guestId: guest.id
+            });
+        }
+
+        // Add individual member emails from RSVPs
+        const rsvp = allRsvps.find(r => r.guestId === guest.id);
+        if (rsvp && rsvp.memberEmails) {
+            for (const [memberName, memberEmail] of Object.entries(rsvp.memberEmails)) {
+                // Skip if same as guest-level email
+                if (memberEmail.toLowerCase() === (guest.email || '').toLowerCase()) continue;
+                recipients.push({
+                    name: memberName,
+                    email: memberEmail,
+                    status: status,
+                    guestId: guest.id
+                });
+            }
+        }
+    });
+
+    // Apply filter
+    if (emailRecipientFilter !== 'all') {
+        const filterMap = {
+            attending: 'confirmed',
+            declined: 'declined',
+            pending: 'pending'
+        };
+        recipients = recipients.filter(r => r.status === filterMap[emailRecipientFilter]);
+    }
+
+    if (recipients.length === 0) {
+        container.innerHTML = '<p style="padding: 1rem; color: #666; text-align: center;">No guests with email addresses found for this filter.</p>';
+        updateSelectedCount();
+        return;
+    }
+
+    container.innerHTML = recipients.map((r, idx) => {
+        const statusClass = r.status === 'confirmed' ? 'confirmed' : r.status === 'declined' ? 'declined' : 'pending';
+        return `
+            <label class="recipient-item">
+                <input type="checkbox" checked data-email="${escapeHtml(r.email)}" data-name="${escapeHtml(r.name)}">
+                <span class="recipient-name">${escapeHtml(r.name)}</span>
+                <span class="recipient-email">${escapeHtml(r.email)}</span>
+                <span class="recipient-status"><span class="status-badge ${statusClass}">${r.status}</span></span>
+            </label>
+        `;
+    }).join('');
+
+    // Listen for checkbox changes
+    container.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+        cb.addEventListener('change', updateSelectedCount);
+    });
+
+    updateSelectedCount();
+}
+
+function updateSelectedCount() {
+    const guestCount = document.querySelectorAll('#recipientList input[type="checkbox"]:checked').length;
+    const total = guestCount + customRecipients.length;
+    const el = document.getElementById('selectedCount');
+    if (el) el.textContent = total;
+}
+
+async function handleSendEmail() {
+    const subject = document.getElementById('emailSubject').value.trim();
+    const body = document.getElementById('emailBody').value.trim();
+    const statusEl = document.getElementById('emailStatus');
+    const sendBtn = document.getElementById('sendEmailBtn');
+
+    if (!subject || !body) {
+        statusEl.className = 'email-status error';
+        statusEl.textContent = 'Please fill in both subject and message.';
+        statusEl.style.display = 'block';
+        return;
+    }
+
+    // Collect checked recipients from guest list + custom
+    const recipients = [];
+    document.querySelectorAll('#recipientList input[type="checkbox"]:checked').forEach(cb => {
+        recipients.push({
+            email: cb.dataset.email,
+            name: cb.dataset.name
+        });
+    });
+    customRecipients.forEach(r => {
+        recipients.push({ email: r.email, name: r.name });
+    });
+
+    if (recipients.length === 0) {
+        statusEl.className = 'email-status error';
+        statusEl.textContent = 'Please select at least one recipient.';
+        statusEl.style.display = 'block';
+        return;
+    }
+
+    // Confirm
+    if (!confirm(`Send email to ${recipients.length} recipient(s)?`)) return;
+
+    // Show sending state
+    sendBtn.disabled = true;
+    sendBtn.textContent = 'Sending...';
+    statusEl.className = 'email-status sending';
+    statusEl.textContent = `Sending to ${recipients.length} recipient(s)...`;
+    statusEl.style.display = 'block';
+
+    try {
+        // Get Firebase auth token
+        const user = window.firebaseAuth.currentUser;
+        const token = user ? await user.getIdToken() : '';
+
+        const response = await fetch('/.netlify/functions/send-email', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                to: recipients,
+                subject: subject,
+                html: body,
+                from_email: 'info@marlybaskha.ca',
+                from_name: 'Marly & Michael'
+            })
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            statusEl.className = 'email-status success';
+            statusEl.textContent = `Email sent successfully to ${recipients.length} recipient(s)!`;
+        } else {
+            statusEl.className = 'email-status error';
+            statusEl.textContent = `Failed to send: ${result.error || 'Unknown error'}`;
+        }
+    } catch (error) {
+        console.error('Email send error:', error);
+        statusEl.className = 'email-status error';
+        statusEl.textContent = `Error: ${error.message}`;
+    } finally {
+        sendBtn.disabled = false;
+        sendBtn.textContent = 'Send Email';
+    }
 }
