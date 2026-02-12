@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="description" content="Join us in celebrating the engagement of Marly and Michael. RSVP for our special celebration in June 2026.">
+    <meta name="theme-color" content="#5a7a5c">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Marly & Michael - Engagement Celebration (Mockup)</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,500&family=Montserrat:wght@300;400;500&family=Great+Vibes&display=swap" rel="stylesheet">
+
+    <!-- Collage Styles -->
+    <style>
+        /* Photo Collage in Arch Frame */
+        .story-image-wrapper {
+            position: relative;
+            margin: 4rem auto;
+            max-width: 500px;
+            width: 100%;
+            display: block;
+        }
+
+        .photo-collage {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 3 / 4;
+            overflow: hidden;
+            border-radius: 250px 250px 0 0;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+            border: 8px solid #FFFFFF;
+            background: #1a1a1a;
+        }
+
+        .collage-item {
+            position: absolute;
+            overflow: hidden;
+            box-shadow: 2px 3px 12px rgba(0, 0, 0, 0.3);
+            border: 3px solid #FFFFFF;
+            transition: transform 0.4s ease, box-shadow 0.4s ease;
+        }
+
+        .collage-item:hover {
+            transform: scale(1.05) !important;
+            box-shadow: 4px 6px 20px rgba(0, 0, 0, 0.45);
+            z-index: 10 !important;
+        }
+
+        .collage-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            -webkit-filter: sepia(40%) contrast(1.1) brightness(1.05) saturate(0.8) grayscale(10%);
+            filter: sepia(40%) contrast(1.1) brightness(1.05) saturate(0.8) grayscale(10%);
+        }
+
+        /* Each tile with unique position, size, and tilt */
+        .collage-item:nth-child(1) {
+            top: 2%; left: 10%; width: 42%; height: 28%;
+            transform: rotate(-3deg);
+            z-index: 3;
+        }
+        .collage-item:nth-child(2) {
+            top: 5%; right: 8%; width: 38%; height: 25%;
+            transform: rotate(4deg);
+            z-index: 2;
+        }
+        .collage-item:nth-child(3) {
+            top: 28%; left: 5%; width: 35%; height: 24%;
+            transform: rotate(2deg);
+            z-index: 4;
+        }
+        .collage-item:nth-child(4) {
+            top: 25%; right: 3%; width: 44%; height: 30%;
+            transform: rotate(-2.5deg);
+            z-index: 5;
+        }
+        .collage-item:nth-child(5) {
+            top: 50%; left: 8%; width: 40%; height: 26%;
+            transform: rotate(-1.5deg);
+            z-index: 6;
+        }
+        .collage-item:nth-child(6) {
+            top: 52%; right: 6%; width: 36%; height: 23%;
+            transform: rotate(3.5deg);
+            z-index: 3;
+        }
+        .collage-item:nth-child(7) {
+            top: 74%; left: 3%; width: 46%; height: 24%;
+            transform: rotate(1deg);
+            z-index: 7;
+        }
+        .collage-item:nth-child(8) {
+            top: 76%; right: 5%; width: 40%; height: 22%;
+            transform: rotate(-4deg);
+            z-index: 4;
+        }
+
+        /* Gold Frame */
+        .image-frame {
+            position: absolute;
+            top: 20px;
+            left: -15px;
+            right: -15px;
+            bottom: -20px;
+            border: 1px solid #D4AF37;
+            border-radius: 265px 265px 0 0;
+            z-index: 20;
+            pointer-events: none;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .story-image-wrapper {
+                max-width: 350px;
+                padding: 0 20px;
+            }
+
+            .photo-collage {
+                border-radius: 175px 175px 0 0;
+            }
+
+            .image-frame {
+                top: 15px;
+                left: 5px;
+                right: 5px;
+                bottom: -15px;
+                border-radius: 190px 190px 0 0;
+            }
+
+            .collage-item {
+                border-width: 2px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .story-image-wrapper {
+                max-width: 300px;
+                padding: 0 15px;
+            }
+
+            .photo-collage {
+                border-radius: 150px 150px 0 0;
+            }
+
+            .image-frame {
+                left: 5px;
+                right: 5px;
+                border-radius: 165px 165px 0 0;
+            }
+        }
+    </style>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, doc, getDoc, updateDoc, query, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-analytics.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBCtD1ZhcUND9bbOo1t7bqwiTB64asWVuY",
+            authDomain: "mmrsvps-95e2a.firebaseapp.com",
+            databaseURL: "https://mmrsvps-95e2a-default-rtdb.firebaseio.com",
+            projectId: "mmrsvps-95e2a",
+            storageBucket: "mmrsvps-95e2a.firebasestorage.app",
+            messagingSenderId: "404940644347",
+            appId: "1:404940644347:web:2bd0cc03c3832e8038b55e",
+            measurementId: "G-2BBH6CDRY2"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const analytics = getAnalytics(app);
+
+        window.firebaseDb = db;
+        window.firebaseAddDoc = addDoc;
+        window.firebaseGetDocs = getDocs;
+        window.firebaseDoc = doc;
+        window.firebaseGetDoc = getDoc;
+        window.firebaseUpdateDoc = updateDoc;
+        window.firebaseCollection = collection;
+        window.firebaseQuery = query;
+        window.firebaseWhere = where;
+        window.firebaseServerTimestamp = serverTimestamp;
+    </script>
+</head>
+<body>
+    <div class="hero-section">
+        <div class="hero-overlay"></div>
+        <div class="hero-content">
+            <div class="logo-container">
+                <img src="Logo.jpeg" alt="Marly & Michael" class="logo">
+            </div>
+            <h1 class="couple-names">Marly & Michael</h1>
+            <div class="divider"></div>
+            <p class="tagline">Together with joy in our hearts, we invite you to celebrate our engagement</p>
+        </div>
+        <div class="scroll-indicator">
+            <span>↓</span>
+        </div>
+    </div>
+
+    <section class="story-section">
+        <div class="container">
+            <div class="story-content">
+                <h2 class="section-title">Our Story</h2>
+
+                <!-- Photo Collage in Arch Frame -->
+                <div class="story-image-wrapper">
+                    <div class="photo-collage">
+                        <div class="collage-item"><img src="image.jpeg" alt="Marly and Michael"></div>
+                        <div class="collage-item"><img src="image.jpeg" alt="Marly and Michael"></div>
+                        <div class="collage-item"><img src="image.jpeg" alt="Marly and Michael"></div>
+                        <div class="collage-item"><img src="image.jpeg" alt="Marly and Michael"></div>
+                        <div class="collage-item"><img src="image.jpeg" alt="Marly and Michael"></div>
+                        <div class="collage-item"><img src="image.jpeg" alt="Marly and Michael"></div>
+                        <div class="collage-item"><img src="image.jpeg" alt="Marly and Michael"></div>
+                        <div class="collage-item"><img src="image.jpeg" alt="Marly and Michael"></div>
+                    </div>
+                    <div class="image-frame"></div>
+                </div>
+
+                <p class="story-text">
+                    Two hearts, one journey. We are thrilled to share this special moment with our loved ones
+                    as we begin our forever together.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <section class="event-details">
+        <div class="container">
+            <h2 class="section-title">Celebration Details</h2>
+            <div class="details-grid">
+                <div class="detail-card">
+                    <div class="detail-icon">📅</div>
+                    <h3>Date</h3>
+                    <p>May 24th, 2025</p>
+                </div>
+                <div class="detail-card">
+                    <div class="detail-icon">⏰</div>
+                    <h3>Time</h3>
+                    <p>6:00 PM</p>
+                </div>
+                <div class="detail-card">
+                    <div class="detail-icon">📍</div>
+                    <h3>Venue</h3>
+                    <p><a href="https://share.google/P3SJZy6HMCkkhdmed" target="_blank" style="color: inherit; text-decoration: underline;">Nai Restaurant</a></p>
+                </div>
+                <div class="detail-card">
+                    <div class="detail-icon">👔</div>
+                    <h3>Dress Code</h3>
+                    <p>Spring Semi-Formal</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="rsvp-section">
+        <div class="container">
+            <h2 class="section-title">RSVP</h2>
+            <p class="rsvp-subtitle">Please let us know if you'll be joining us</p>
+
+            <!-- Step 1: Name Verification -->
+            <div id="verificationStep" class="rsvp-form">
+                <div class="verification-content">
+                    <p class="verification-intro">Please enter your name as it appears on your invitation</p>
+                    <div class="form-group">
+                        <label for="verifyName">Your Full Name *</label>
+                        <input type="text" id="verifyName" placeholder="Enter your name" required>
+                    </div>
+                    <button type="button" id="verifyBtn" class="submit-btn">
+                        <span class="btn-text">Find My Invitation</span>
+                        <span class="btn-loading" style="display: none;">Searching...</span>
+                    </button>
+                    <div id="verifyError" class="form-message error" style="display: none;"></div>
+                </div>
+            </div>
+
+            <!-- Step 2: RSVP Form (hidden until verified) -->
+            <form id="rsvpForm" class="rsvp-form" style="display: none;">
+                <div id="welcomeHeader" class="welcome-header">
+                    <p class="welcome-name">Welcome, <span id="guestDisplayName"></span>!</p>
+                    <p id="editingNotice" class="editing-notice" style="display: none;">You've already submitted an RSVP. You can update your response below.</p>
+                    <button type="button" id="changeGuestBtn" class="change-guest-btn">Not you? Click here</button>
+                </div>
+
+                <input type="hidden" id="guestDocId">
+                <input type="hidden" id="existingRsvpId">
+
+                <div class="form-group">
+                    <label for="name">Full Name *</label>
+                    <input type="text" id="name" name="name" required readonly>
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Email Address *</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="phone">Phone Number</label>
+                    <input type="tel" id="phone" name="phone">
+                </div>
+
+                <div class="form-group">
+                    <label class="attendance-label">Will you be attending? *</label>
+                    <div class="radio-group">
+                        <label class="radio-option">
+                            <input type="radio" name="attending" value="yes" required>
+                            <span>Joyfully Accept</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="attending" value="no" required>
+                            <span>Regretfully Decline</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div id="attendingFields" style="display: none;">
+                    <div class="form-group">
+                        <label for="guests">Number of Guests (including yourself) *</label>
+                        <select id="guests" name="guests">
+                            <option value="1">1 (Just me)</option>
+                            <option value="2">2 Guests</option>
+                            <option value="3">3 Guests</option>
+                            <option value="4">4 Guests</option>
+                            <option value="5">5+ Guests</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" id="guestNamesGroup" style="display: none;">
+                        <label for="guestNames">Names of Additional Guests</label>
+                        <textarea id="guestNames" name="guestNames" rows="2" placeholder="Please list the names of your guests"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="relationship">Your Relationship to the Couple</label>
+                        <select id="relationship" name="relationship">
+                            <option value="">Select relationship</option>
+                            <option value="family-bride">Family of Marly</option>
+                            <option value="family-groom">Family of Michael</option>
+                            <option value="friend-bride">Friend of Marly</option>
+                            <option value="friend-groom">Friend of Michael</option>
+                            <option value="friend-both">Friend of Both</option>
+                            <option value="colleague">Colleague</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="mealPreference">Meal Preference</label>
+                        <select id="mealPreference" name="mealPreference">
+                            <option value="">Select preference</option>
+                            <option value="standard">Standard</option>
+                            <option value="vegetarian">Vegetarian</option>
+                            <option value="vegan">Vegan</option>
+                            <option value="halal">Halal</option>
+                            <option value="kosher">Kosher</option>
+                            <option value="gluten-free">Gluten-Free</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="dietary">Dietary Restrictions or Allergies</label>
+                        <textarea id="dietary" name="dietary" rows="2" placeholder="Please let us know of any allergies or dietary needs"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="childrenCount">Number of Children Attending</label>
+                        <select id="childrenCount" name="childrenCount">
+                            <option value="0">No children</option>
+                            <option value="1">1 Child</option>
+                            <option value="2">2 Children</option>
+                            <option value="3">3 Children</option>
+                            <option value="4">4+ Children</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" id="childrenAgesGroup" style="display: none;">
+                        <label for="childrenAges">Ages of Children</label>
+                        <input type="text" id="childrenAges" name="childrenAges" placeholder="e.g., 3, 7, 12">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="songRequest">Song Request for the Celebration</label>
+                        <input type="text" id="songRequest" name="songRequest" placeholder="What song gets you on the dance floor?">
+                    </div>
+
+                    <div class="form-group checkbox-group">
+                        <label class="checkbox-option">
+                            <input type="checkbox" id="transportNeeded" name="transportNeeded">
+                            <span>I may need transportation assistance</span>
+                        </label>
+                    </div>
+
+                    <div class="form-group checkbox-group">
+                        <label class="checkbox-option">
+                            <input type="checkbox" id="accommodationNeeded" name="accommodationNeeded">
+                            <span>I may need accommodation recommendations</span>
+                        </label>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="specialRequests">Special Requests or Accessibility Needs</label>
+                        <textarea id="specialRequests" name="specialRequests" rows="2" placeholder="Wheelchair access, seating preferences, etc."></textarea>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="message">Message to the Couple</label>
+                    <textarea id="message" name="message" rows="4" placeholder="Share your wishes and excitement with us!"></textarea>
+                </div>
+
+                <button type="submit" class="submit-btn">
+                    <span class="btn-text">Send RSVP</span>
+                    <span class="btn-loading" style="display: none;">Sending...</span>
+                </button>
+
+                <div class="form-message" id="formMessage"></div>
+            </form>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-logo">
+                <img src="Logo.jpeg" alt="Marly & Michael" class="footer-logo-img">
+            </div>
+            <p class="footer-text">We can't wait to celebrate with you!</p>
+            <p class="footer-names">Marly & Michael</p>
+            <div class="footer-divider"></div>
+            <p class="footer-copyright">© 2025 - With Love</p>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+
+</body>
+</html>

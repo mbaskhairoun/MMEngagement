@@ -52,6 +52,9 @@
 
     <!-- SheetJS for Excel parsing -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <!-- Chart.js for Analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
 <body>
     <!-- Login Section -->
@@ -94,6 +97,7 @@
             <button class="nav-tab active" data-tab="guests">Guest List</button>
             <button class="nav-tab" data-tab="settings">Form Settings</button>
             <button class="nav-tab" data-tab="rsvps">RSVPs</button>
+            <button class="nav-tab" data-tab="analytics">Analytics</button>
         </nav>
 
         <main class="dashboard-content">
@@ -141,9 +145,9 @@
                                 <table id="previewTable" class="data-table">
                                     <thead>
                                         <tr>
-                                            <th>Name</th>
+                                            <th>Invitation Name</th>
+                                            <th>Members</th>
                                             <th>Email</th>
-                                            <th>Max Guests</th>
                                             <th>Notes</th>
                                         </tr>
                                     </thead>
@@ -169,23 +173,20 @@
                         <form id="guestForm" class="modal-body">
                             <input type="hidden" id="guestId">
                             <div class="form-group">
-                                <label for="guestName">Name *</label>
-                                <input type="text" id="guestName" required>
+                                <label for="guestName">Invitation Name *</label>
+                                <input type="text" id="guestName" required placeholder="e.g. The Smith Family, or John Doe">
                             </div>
                             <div class="form-group">
                                 <label for="guestEmail">Email</label>
                                 <input type="email" id="guestEmail">
                             </div>
                             <div class="form-group">
-                                <label for="maxGuests">Max Guests Allowed</label>
-                                <select id="maxGuests">
-                                    <option value="1">1</option>
-                                    <option value="2" selected>2</option>
-                                    <option value="3">3</option>
-                                    <option value="4">4</option>
-                                    <option value="5">5</option>
-                                    <option value="6">6</option>
-                                </select>
+                                <label>Members on this Invitation *</label>
+                                <div id="familyMembersList" class="family-members-list"></div>
+                                <div class="add-member-row">
+                                    <input type="text" id="newMemberName" placeholder="Guest name">
+                                    <button type="button" id="addMemberBtn" class="btn btn-secondary btn-small">+ Add</button>
+                                </div>
                             </div>
                             <div class="form-group">
                                 <label for="guestNotes">Notes</label>
@@ -202,9 +203,9 @@
                 <table id="guestsTable" class="data-table">
                     <thead>
                         <tr>
-                            <th>Name</th>
+                            <th>Invitation</th>
+                            <th>Members</th>
                             <th>Email</th>
-                            <th>Max Guests</th>
                             <th>RSVP Status</th>
                             <th>Notes</th>
                             <th>Actions</th>
@@ -231,11 +232,6 @@
                         <label class="toggle-option">
                             <input type="checkbox" id="field-phone" checked>
                             <span class="toggle-label">Phone Number</span>
-                        </label>
-
-                        <label class="toggle-option">
-                            <input type="checkbox" id="field-guestNames" checked>
-                            <span class="toggle-label">Additional Guest Names</span>
                         </label>
 
                         <label class="toggle-option">
@@ -320,17 +316,77 @@
                             <th>Name</th>
                             <th>Email</th>
                             <th>Attending</th>
-                            <th>Guests</th>
+                            <th>Attending Members</th>
                             <th>Meal</th>
                             <th>Dietary</th>
                             <th>Message</th>
                             <th>Submitted</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody id="rsvpsTableBody">
-                        <tr><td colspan="8" class="loading">Loading...</td></tr>
+                        <tr><td colspan="9" class="loading">Loading...</td></tr>
                     </tbody>
                 </table>
+            </div>
+
+            <!-- Analytics Tab -->
+            <div id="analyticsTab" class="tab-content">
+                <div class="tab-header">
+                    <h2>Analytics</h2>
+                </div>
+
+                <div class="analytics-stats">
+                    <div class="stat-card">
+                        <span class="stat-number" id="analyticsHouseholds">0</span>
+                        <span class="stat-label">Total Invitations</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-number" id="analyticsTotalIndividuals">0</span>
+                        <span class="stat-label">Total Individuals</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-number" id="analyticsResponseRate">0%</span>
+                        <span class="stat-label">Response Rate</span>
+                    </div>
+                    <div class="stat-card attending">
+                        <span class="stat-number" id="analyticsAttendanceRate">0%</span>
+                        <span class="stat-label">Attendance Rate</span>
+                    </div>
+                    <div class="stat-card attending">
+                        <span class="stat-number" id="analyticsHeadcount">0</span>
+                        <span class="stat-label">Total Headcount</span>
+                    </div>
+                    <div class="stat-card declined">
+                        <span class="stat-number" id="analyticsDeclined">0</span>
+                        <span class="stat-label">Declined</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-number" id="analyticsPending">0</span>
+                        <span class="stat-label">Pending</span>
+                    </div>
+                </div>
+
+                <div class="analytics-charts">
+                    <div class="chart-card">
+                        <h3>RSVP Timeline</h3>
+                        <canvas id="rsvpTimelineChart"></canvas>
+                    </div>
+                    <div class="chart-row">
+                        <div class="chart-card chart-half">
+                            <h3>Attendance Breakdown</h3>
+                            <canvas id="attendanceChart"></canvas>
+                        </div>
+                        <div class="chart-card chart-half">
+                            <h3>Meal Preferences</h3>
+                            <canvas id="mealChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-card">
+                        <h3>Family Size Distribution</h3>
+                        <canvas id="familySizeChart"></canvas>
+                    </div>
+                </div>
             </div>
         </main>
     </div>

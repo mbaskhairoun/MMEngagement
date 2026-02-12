@@ -5,6 +5,7 @@
 let currentGuest = null;
 let existingRsvp = null;
 let formSettings = null;
+let verifiedMemberName = null; // The name the person typed to verify
 
 document.addEventListener('DOMContentLoaded', function() {
     // Smooth scroll for scroll indicator
@@ -52,7 +53,6 @@ async function loadFormSettings() {
             // Default settings - show all fields
             formSettings = {
                 phone: true,
-                guestNames: true,
                 relationship: true,
                 mealPreference: true,
                 dietary: true,
@@ -74,7 +74,6 @@ async function loadFormSettings() {
 function applyFormSettings() {
     const fieldMappings = {
         phone: 'phone',
-        guestNames: 'guestNames',
         relationship: 'relationship',
         mealPreference: 'mealPreference',
         dietary: 'dietary',
@@ -163,44 +162,67 @@ async function handleVerification() {
     verifyError.style.display = 'none';
 
     try {
-        // Search for guest by name (case-insensitive)
         const nameLower = verifyName.toLowerCase();
+        let foundGuest = null;
+        let matchedName = verifyName; // Track which member name matched
+
+        // First: try exact match on invitation name
         const q = window.firebaseQuery(
             window.firebaseCollection(window.firebaseDb, 'guests'),
             window.firebaseWhere('nameLower', '==', nameLower)
         );
-
         const snapshot = await window.firebaseGetDocs(q);
 
-        if (snapshot.empty) {
-            // Try partial/fuzzy match
+        if (!snapshot.empty) {
+            const doc = snapshot.docs[0];
+            foundGuest = { id: doc.id, ...doc.data() };
+        }
+
+        // Second: search within family members and fuzzy match
+        if (!foundGuest) {
             const allGuestsSnapshot = await window.firebaseGetDocs(
                 window.firebaseCollection(window.firebaseDb, 'guests')
             );
 
-            let foundGuest = null;
             allGuestsSnapshot.forEach(doc => {
+                if (foundGuest) return; // Already found
                 const guestData = doc.data();
+
+                // Check family members for exact match
+                const members = guestData.familyMembers || [];
+                const membersLower = guestData.familyMembersLower || members.map(m => m.toLowerCase());
+                const memberIdx = membersLower.indexOf(nameLower);
+                if (memberIdx !== -1) {
+                    foundGuest = { id: doc.id, ...guestData };
+                    matchedName = members[memberIdx]; // Use the exact casing from DB
+                    return;
+                }
+
+                // Fuzzy: check if name partially matches invitation name
                 const guestNameLower = guestData.nameLower || guestData.name.toLowerCase();
-                // Check if entered name is contained in guest name or vice versa
                 if (guestNameLower.includes(nameLower) || nameLower.includes(guestNameLower)) {
                     foundGuest = { id: doc.id, ...guestData };
+                    return;
+                }
+
+                // Fuzzy: check if name partially matches any family member
+                for (let i = 0; i < membersLower.length; i++) {
+                    if (membersLower[i].includes(nameLower) || nameLower.includes(membersLower[i])) {
+                        foundGuest = { id: doc.id, ...guestData };
+                        matchedName = members[i];
+                        return;
+                    }
                 }
             });
+        }
 
-            if (foundGuest) {
-                currentGuest = foundGuest;
-                await checkExistingRsvp();
-                showRsvpForm();
-            } else {
-                showVerifyError('We couldn\'t find your name on our guest list. Please enter your name exactly as it appears on your invitation, or contact us for assistance.');
-            }
-        } else {
-            // Found exact match
-            const doc = snapshot.docs[0];
-            currentGuest = { id: doc.id, ...doc.data() };
+        if (foundGuest) {
+            currentGuest = foundGuest;
+            verifiedMemberName = matchedName;
             await checkExistingRsvp();
             showRsvpForm();
+        } else {
+            showVerifyError('We couldn\'t find your name on our guest list. Please enter your name exactly as it appears on your invitation, or contact us for assistance.');
         }
     } catch (error) {
         console.error('Verification error:', error);
@@ -248,19 +270,19 @@ function showRsvpForm() {
     const nameInput = document.getElementById('name');
     const guestDocIdInput = document.getElementById('guestDocId');
     const existingRsvpIdInput = document.getElementById('existingRsvpId');
-    const guestsSelect = document.getElementById('guests');
 
     // Hide verification, show form
     verificationStep.style.display = 'none';
     rsvpForm.style.display = 'block';
 
-    // Set guest info
-    guestDisplayName.textContent = currentGuest.name;
+    // Set guest info - show the verified person's name, not the invitation name
+    const displayName = verifiedMemberName || currentGuest.name;
+    guestDisplayName.textContent = displayName;
     nameInput.value = currentGuest.name;
     guestDocIdInput.value = currentGuest.id;
 
-    // Update max guests dropdown based on guest's allowed limit
-    updateGuestDropdown(currentGuest.maxGuests || 2);
+    // Render household member checkboxes
+    renderHouseholdCheckboxes(currentGuest);
 
     // If editing existing RSVP, populate the form
     if (existingRsvp) {
@@ -276,17 +298,41 @@ function showRsvpForm() {
     rsvpForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-function updateGuestDropdown(maxGuests) {
-    const guestsSelect = document.getElementById('guests');
-    guestsSelect.innerHTML = '';
+// ============================================
+// Household Members
+// ============================================
 
-    for (let i = 1; i <= maxGuests; i++) {
-        const option = document.createElement('option');
-        option.value = i;
-        option.textContent = i === 1 ? '1 (Just me)' : `${i} Guests`;
-        guestsSelect.appendChild(option);
-    }
+function renderHouseholdCheckboxes(guest) {
+    const container = document.getElementById('householdMembersList');
+    if (!container) return;
+
+    // Use familyMembers array - all individual people on this invitation
+    const allMembers = guest.familyMembers && guest.familyMembers.length > 0
+        ? guest.familyMembers
+        : [guest.name]; // Fallback for legacy guests without familyMembers
+
+    const verifiedLower = (verifiedMemberName || '').toLowerCase();
+
+    container.innerHTML = allMembers.map(member => {
+        const isYou = member.toLowerCase() === verifiedLower;
+        return `
+        <label class="checkbox-option household-member-check">
+            <input type="checkbox" name="attendingMember" value="${escapeHtml(member)}" checked>
+            <span>${escapeHtml(member)}${isYou ? ' (You)' : ''}</span>
+        </label>
+    `}).join('');
 }
+
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// ============================================
+// Form Population
+// ============================================
 
 function populateFormWithExistingRsvp() {
     const rsvp = existingRsvp;
@@ -310,15 +356,15 @@ function populateFormWithExistingRsvp() {
         }
     }
 
-    // Set guests count
-    if (rsvp.guestCount) {
-        document.getElementById('guests').value = rsvp.guestCount;
-        document.getElementById('guests').dispatchEvent(new Event('change'));
+    // Set attending members checkboxes
+    if (rsvp.attendingMembers && rsvp.attendingMembers.length > 0) {
+        document.querySelectorAll('input[name="attendingMember"]').forEach(cb => {
+            cb.checked = rsvp.attendingMembers.includes(cb.value);
+        });
     }
 
     // Set other fields
     const fieldMappings = {
-        guestNames: 'guestNames',
         relationship: 'relationship',
         mealPreference: 'mealPreference',
         dietaryRestrictions: 'dietary',
@@ -353,11 +399,11 @@ function resetToVerification() {
     // Reset state
     currentGuest = null;
     existingRsvp = null;
+    verifiedMemberName = null;
 
     // Reset form
     rsvpForm.reset();
     document.getElementById('attendingFields').style.display = 'none';
-    document.getElementById('guestNamesGroup').style.display = 'none';
     document.getElementById('childrenAgesGroup').style.display = 'none';
 
     // Show verification
@@ -381,7 +427,6 @@ function initializeFormHandlers() {
     const btnLoading = submitBtn.querySelector('.btn-loading');
     const formMessage = document.getElementById('formMessage');
     const attendingFields = document.getElementById('attendingFields');
-    const guestNamesGroup = document.getElementById('guestNamesGroup');
     const childrenAgesGroup = document.getElementById('childrenAgesGroup');
 
     // Show/hide attending fields based on RSVP response
@@ -390,22 +435,10 @@ function initializeFormHandlers() {
         radio.addEventListener('change', function() {
             if (this.value === 'yes') {
                 attendingFields.style.display = 'block';
-                document.getElementById('guests').setAttribute('required', 'required');
             } else {
                 attendingFields.style.display = 'none';
-                document.getElementById('guests').removeAttribute('required');
             }
         });
-    });
-
-    // Show/hide guest names field based on guest count
-    const guestsSelect = document.getElementById('guests');
-    guestsSelect.addEventListener('change', function() {
-        if (parseInt(this.value) > 1 && formSettings.guestNames) {
-            guestNamesGroup.style.display = 'block';
-        } else {
-            guestNamesGroup.style.display = 'none';
-        }
     });
 
     // Show/hide children ages field based on children count
@@ -431,6 +464,11 @@ function initializeFormHandlers() {
             return;
         }
 
+        // Collect attending members from checkboxes
+        const attendingMembers = attendingValue === 'yes'
+            ? Array.from(document.querySelectorAll('input[name="attendingMember"]:checked')).map(cb => cb.value)
+            : [];
+
         // Collect form data
         const formData = {
             // Link to guest
@@ -445,9 +483,11 @@ function initializeFormHandlers() {
             attending: attendingValue,
             rsvpStatus: attendingValue === 'yes' ? 'confirmed' : 'declined',
 
+            // Household attendance
+            attendingMembers: attendingMembers,
+            totalAttending: attendingMembers.length,
+
             // Guest details (only if attending)
-            guestCount: attendingValue === 'yes' ? parseInt(document.getElementById('guests').value) : 0,
-            guestNames: attendingValue === 'yes' ? (document.getElementById('guestNames').value.trim() || null) : null,
             relationship: attendingValue === 'yes' ? (document.getElementById('relationship').value || null) : null,
 
             // Meal preferences

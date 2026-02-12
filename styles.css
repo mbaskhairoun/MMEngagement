@@ -700,6 +700,17 @@ body {
     background: var(--champagne);
 }
 
+/* Household Member Checklist */
+.household-checklist {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.household-member-check {
+    border-radius: 8px;
+}
+
 /* Hidden fields */
 .form-group.hidden {
     display: none !important;
