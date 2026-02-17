@@ -143,11 +143,21 @@ function initializeVerification() {
     });
 }
 
+// Check if all typed words match the start of name words
+function wordsMatch(typedLower, candidateLower) {
+    const typedWords = typedLower.split(/\s+/).filter(Boolean);
+    const candidateWords = candidateLower.split(/\s+/).filter(Boolean);
+    return typedWords.every(tw =>
+        candidateWords.some(cw => cw.startsWith(tw))
+    );
+}
+
 async function handleVerification() {
     const verifyBtn = document.getElementById('verifyBtn');
     const btnText = verifyBtn.querySelector('.btn-text');
     const btnLoading = verifyBtn.querySelector('.btn-loading');
     const verifyError = document.getElementById('verifyError');
+    const matchSelection = document.getElementById('matchSelection');
     const verifyName = document.getElementById('verifyName').value.trim();
 
     if (!verifyName) {
@@ -155,18 +165,19 @@ async function handleVerification() {
         return;
     }
 
-    // Show loading
+    // Show loading, hide previous results
     verifyBtn.disabled = true;
     btnText.style.display = 'none';
     btnLoading.style.display = 'inline';
     verifyError.style.display = 'none';
+    matchSelection.style.display = 'none';
 
     try {
         const nameLower = verifyName.toLowerCase();
         let foundGuest = null;
-        let matchedName = verifyName; // Track which member name matched
+        let matchedName = verifyName;
 
-        // First: try exact match on invitation name
+        // Step 1: Exact match on invitation name
         const q = window.firebaseQuery(
             window.firebaseCollection(window.firebaseDb, 'guests'),
             window.firebaseWhere('nameLower', '==', nameLower)
@@ -178,42 +189,67 @@ async function handleVerification() {
             foundGuest = { id: doc.id, ...doc.data() };
         }
 
-        // Second: search within family members and fuzzy match
+        // Step 2: Exact match on family member
         if (!foundGuest) {
             const allGuestsSnapshot = await window.firebaseGetDocs(
                 window.firebaseCollection(window.firebaseDb, 'guests')
             );
 
+            // First pass: exact match on family member
             allGuestsSnapshot.forEach(doc => {
-                if (foundGuest) return; // Already found
+                if (foundGuest) return;
                 const guestData = doc.data();
-
-                // Check family members for exact match
                 const members = guestData.familyMembers || [];
                 const membersLower = guestData.familyMembersLower || members.map(m => m.toLowerCase());
                 const memberIdx = membersLower.indexOf(nameLower);
                 if (memberIdx !== -1) {
                     foundGuest = { id: doc.id, ...guestData };
-                    matchedName = members[memberIdx]; // Use the exact casing from DB
-                    return;
-                }
-
-                // Fuzzy: check if name partially matches invitation name
-                const guestNameLower = guestData.nameLower || guestData.name.toLowerCase();
-                if (guestNameLower.includes(nameLower) || nameLower.includes(guestNameLower)) {
-                    foundGuest = { id: doc.id, ...guestData };
-                    return;
-                }
-
-                // Fuzzy: check if name partially matches any family member
-                for (let i = 0; i < membersLower.length; i++) {
-                    if (membersLower[i].includes(nameLower) || nameLower.includes(membersLower[i])) {
-                        foundGuest = { id: doc.id, ...guestData };
-                        matchedName = members[i];
-                        return;
-                    }
+                    matchedName = members[memberIdx];
                 }
             });
+
+            // Step 3: Word-boundary partial match (collect all candidates)
+            if (!foundGuest) {
+                const candidates = [];
+
+                allGuestsSnapshot.forEach(doc => {
+                    const guestData = doc.data();
+                    const guestNameLower = guestData.nameLower || guestData.name.toLowerCase();
+                    const members = guestData.familyMembers || [];
+                    const membersLower = guestData.familyMembersLower || members.map(m => m.toLowerCase());
+
+                    // Check invitation name
+                    if (wordsMatch(nameLower, guestNameLower)) {
+                        candidates.push({
+                            guest: { id: doc.id, ...guestData },
+                            matchedName: guestData.name,
+                            displayLabel: guestData.name + (members.length > 1 ? ` (${members.length} guests)` : '')
+                        });
+                        return;
+                    }
+
+                    // Check family members
+                    for (let i = 0; i < membersLower.length; i++) {
+                        if (wordsMatch(nameLower, membersLower[i])) {
+                            candidates.push({
+                                guest: { id: doc.id, ...guestData },
+                                matchedName: members[i],
+                                displayLabel: members[i] + ` (${guestData.name} invitation)`
+                            });
+                            return; // One match per invitation is enough
+                        }
+                    }
+                });
+
+                if (candidates.length === 1) {
+                    foundGuest = candidates[0].guest;
+                    matchedName = candidates[0].matchedName;
+                } else if (candidates.length > 1) {
+                    // Multiple matches — show selection UI
+                    showMatchSelection(candidates);
+                    return;
+                }
+            }
         }
 
         if (foundGuest) {
@@ -232,6 +268,32 @@ async function handleVerification() {
         btnText.style.display = 'inline';
         btnLoading.style.display = 'none';
     }
+}
+
+function showMatchSelection(candidates) {
+    const matchSelection = document.getElementById('matchSelection');
+    const matchList = document.getElementById('matchList');
+
+    matchList.innerHTML = candidates.map((c, idx) => `
+        <button type="button" class="match-option" data-index="${idx}">
+            ${escapeHtml(c.displayLabel)}
+        </button>
+    `).join('');
+
+    // Attach click handlers
+    matchList.querySelectorAll('.match-option').forEach(btn => {
+        btn.addEventListener('click', async function() {
+            const idx = parseInt(this.dataset.index);
+            const selected = candidates[idx];
+            currentGuest = selected.guest;
+            verifiedMemberName = selected.matchedName;
+            matchSelection.style.display = 'none';
+            await checkExistingRsvp();
+            showRsvpForm();
+        });
+    });
+
+    matchSelection.style.display = 'block';
 }
 
 async function checkExistingRsvp() {
@@ -568,6 +630,9 @@ function initializeFormHandlers() {
                 );
             }
 
+            // Send RSVP confirmation/update email (fire and forget)
+            sendRsvpConfirmationEmail(formData, !!existingRsvpId);
+
             // Show success message
             const successMsg = existingRsvpId
                 ? "Your RSVP has been updated successfully!"
@@ -618,6 +683,72 @@ function initializeFormHandlers() {
             }
         });
     });
+}
+
+// ============================================
+// RSVP Confirmation Email
+// ============================================
+
+async function sendRsvpConfirmationEmail(formData, isUpdate) {
+    try {
+        // Collect all unique emails to send the confirmation to
+        const emails = [];
+
+        // Main RSVP email
+        if (formData.email) {
+            emails.push({ email: formData.email, name: formData.fullName });
+        }
+
+        // Member emails (optional emails collected per household member)
+        if (formData.memberEmails) {
+            for (const [memberName, memberEmail] of Object.entries(formData.memberEmails)) {
+                if (memberEmail) {
+                    emails.push({ email: memberEmail, name: memberName });
+                }
+            }
+        }
+
+        if (emails.length === 0) return;
+
+        const status = formData.attending === 'yes' ? 'Joyfully Accepts' : 'Regretfully Declines';
+        const attendingMembers = formData.attendingMembers.length > 0
+            ? formData.attendingMembers
+            : [formData.fullName];
+
+        const response = await fetch('/.netlify/functions/send-rsvp-confirmation', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                name: formData.fullName,
+                status: status,
+                attendingMembers: attendingMembers,
+                emails: emails,
+                isUpdate: isUpdate
+            })
+        });
+
+        // Log email delivery to Firestore
+        const success = response.ok;
+        try {
+            await window.firebaseAddDoc(
+                window.firebaseCollection(window.firebaseDb, 'emailLogs'),
+                {
+                    guestId: formData.guestId,
+                    guestName: formData.fullName,
+                    type: isUpdate ? 'rsvp_updated' : 'rsvp_confirmed',
+                    recipients: emails.map(e => e.email),
+                    success: success,
+                    statusCode: response.status,
+                    sentAt: window.firebaseServerTimestamp()
+                }
+            );
+        } catch (logErr) {
+            console.error('Failed to log email delivery:', logErr);
+        }
+    } catch (error) {
+        // Silently fail — email is a nice-to-have, don't block the RSVP flow
+        console.error('Failed to send confirmation email:', error);
+    }
 }
 
 function showMessage(type, text) {

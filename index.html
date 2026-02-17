@@ -3,11 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
-    <meta name="description" content="Join us in celebrating the engagement of Marly and Michael. RSVP for our special celebration in June 2026.">
-    <meta name="theme-color" content="#5a7a5c">
+    <meta name="description" content="Join us in celebrating the engagement of Marly and Michael. May 24th, 2026 at Nai Restaurant. RSVP now!">
+    <meta name="theme-color" content="#D4AF37">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Marly & Michael - Engagement Celebration</title>
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/jpeg" href="Logo.jpeg">
+    <link rel="apple-touch-icon" href="Logo.jpeg">
+
+    <!-- Open Graph / Social Sharing -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Marly & Michael — Engagement Celebration">
+    <meta property="og:description" content="Join us in celebrating our engagement! May 24th, 2026 at Nai Restaurant. RSVP now!">
+    <meta property="og:image" content="https://marlybaskha.ca/Logo.jpeg">
+    <meta property="og:url" content="https://marlybaskha.ca">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Marly & Michael — Engagement Celebration">
+    <meta name="twitter:description" content="Join us in celebrating our engagement! May 24th, 2026 at Nai Restaurant. RSVP now!">
+    <meta name="twitter:image" content="https://marlybaskha.ca/Logo.jpeg">
+
     <link rel="stylesheet" href="styles.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -242,13 +260,17 @@
                     <p class="verification-intro">Please enter your name as it appears on your invitation</p>
                     <div class="form-group">
                         <label for="verifyName">Your Full Name *</label>
-                        <input type="text" id="verifyName" placeholder="Enter your name" required>
+                        <input type="text" id="verifyName" placeholder="Enter your name" required maxlength="100">
                     </div>
                     <button type="button" id="verifyBtn" class="submit-btn">
                         <span class="btn-text">Find My Invitation</span>
                         <span class="btn-loading" style="display: none;">Searching...</span>
                     </button>
                     <div id="verifyError" class="form-message error" style="display: none;"></div>
+                    <div id="matchSelection" style="display: none;">
+                        <p class="verification-intro">We found multiple matches. Please select your invitation:</p>
+                        <div id="matchList" class="match-list"></div>
+                    </div>
                 </div>
             </div>
 
@@ -270,7 +292,7 @@
 
                 <div class="form-group">
                     <label for="phone">Phone Number</label>
-                    <input type="tel" id="phone" name="phone">
+                    <input type="tel" id="phone" name="phone" maxlength="20">
                 </div>
 
                 <div class="form-group">
@@ -325,7 +347,7 @@
 
                     <div class="form-group">
                         <label for="dietary">Dietary Restrictions or Allergies</label>
-                        <textarea id="dietary" name="dietary" rows="2" placeholder="Please let us know of any allergies or dietary needs"></textarea>
+                        <textarea id="dietary" name="dietary" rows="2" placeholder="Please let us know of any allergies or dietary needs" maxlength="500"></textarea>
                     </div>
 
                     <div class="form-group">
@@ -341,12 +363,12 @@
 
                     <div class="form-group" id="childrenAgesGroup" style="display: none;">
                         <label for="childrenAges">Ages of Children</label>
-                        <input type="text" id="childrenAges" name="childrenAges" placeholder="e.g., 3, 7, 12">
+                        <input type="text" id="childrenAges" name="childrenAges" placeholder="e.g., 3, 7, 12" maxlength="50">
                     </div>
 
                     <div class="form-group">
                         <label for="songRequest">Song Request for the Celebration</label>
-                        <input type="text" id="songRequest" name="songRequest" placeholder="What song gets you on the dance floor?">
+                        <input type="text" id="songRequest" name="songRequest" placeholder="What song gets you on the dance floor?" maxlength="200">
                     </div>
 
                     <div class="form-group checkbox-group">
@@ -365,13 +387,13 @@
 
                     <div class="form-group">
                         <label for="specialRequests">Special Requests or Accessibility Needs</label>
-                        <textarea id="specialRequests" name="specialRequests" rows="2" placeholder="Wheelchair access, seating preferences, etc."></textarea>
+                        <textarea id="specialRequests" name="specialRequests" rows="2" placeholder="Wheelchair access, seating preferences, etc." maxlength="500"></textarea>
                     </div>
                 </div>
 
                 <div class="form-group">
                     <label for="message">Message to the Couple</label>
-                    <textarea id="message" name="message" rows="4" placeholder="Share your wishes and excitement with us!"></textarea>
+                    <textarea id="message" name="message" rows="4" placeholder="Share your wishes and excitement with us!" maxlength="1000"></textarea>
                 </div>
 
                 <button type="submit" class="submit-btn">
@@ -392,7 +414,7 @@
             <p class="footer-text">We can't wait to celebrate with you!</p>
             <p class="footer-names">Marly & Michael</p>
             <div class="footer-divider"></div>
-            <p class="footer-copyright">© 2025 - With Love</p>
+            <p class="footer-copyright">© 2026 - With Love</p>
         </div>
     </footer>
 

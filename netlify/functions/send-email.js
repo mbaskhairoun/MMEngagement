@@ -1,13 +1,38 @@
+const FIREBASE_API_KEY = "AIzaSyBCtD1ZhcUND9bbOo1t7bqwiTB64asWVuY";
+
+// Verify Firebase ID token via Google's REST API (no admin SDK needed)
+async function verifyFirebaseToken(idToken) {
+    const response = await fetch(
+        `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${FIREBASE_API_KEY}`,
+        {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ idToken })
+        }
+    );
+
+    if (!response.ok) return null;
+
+    const data = await response.json();
+    return data.users && data.users.length > 0 ? data.users[0] : null;
+}
+
 exports.handler = async (event) => {
     // Only allow POST
     if (event.httpMethod !== "POST") {
         return { statusCode: 405, body: JSON.stringify({ error: "Method not allowed" }) };
     }
 
-    // Check for auth token (Firebase ID token from admin)
+    // Verify Firebase ID token
     const authHeader = event.headers.authorization || "";
     if (!authHeader.startsWith("Bearer ")) {
         return { statusCode: 401, body: JSON.stringify({ error: "Unauthorized" }) };
+    }
+
+    const idToken = authHeader.slice(7);
+    const user = await verifyFirebaseToken(idToken);
+    if (!user) {
+        return { statusCode: 401, body: JSON.stringify({ error: "Invalid or expired token" }) };
     }
 
     const apiToken = process.env.MM_MLSN_API_TOKEN;
