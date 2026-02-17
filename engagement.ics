@@ -1,0 +1,22 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Marly & Michael//Engagement//EN
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+BEGIN:VEVENT
+DTSTART:20260524T220000Z
+DTEND:20260525T030000Z
+SUMMARY:Marly & Michael's Engagement Celebration
+DESCRIPTION:Join us for our engagement celebration!\nDress code: Spring Semi-Formal\n\nVenue: Nai Restaurant\nhttps://share.google/CJsTXrNLmr4Mc2SRK
+LOCATION:Nai Restaurant
+URL:https://share.google/CJsTXrNLmr4Mc2SRK
+UID:marly-michael-engagement-20260524@marlybaskha.ca
+STATUS:CONFIRMED
+SEQUENCE:0
+BEGIN:VALARM
+TRIGGER:-PT1H
+ACTION:DISPLAY
+DESCRIPTION:Engagement party in 1 hour!
+END:VALARM
+END:VEVENT
+END:VCALENDAR

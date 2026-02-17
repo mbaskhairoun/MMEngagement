@@ -131,8 +131,12 @@ const EMAIL_TEMPLATE = `<!DOCTYPE html>
                                                 <td align="center" style="padding-bottom: 10px;">
                                                     <table role="presentation" cellpadding="0" cellspacing="0" border="0">
                                                         <tr>
-                                                            <td align="center" style="border: 1px solid #D4AF37; padding: 14px 40px;">
-                                                                <a href="https://calendar.google.com/calendar/render?action=TEMPLATE&text=Marly+%26+Michael%27s+Engagement+Celebration&dates=20260524T220000Z/20260525T030000Z&details=Join+us+for+our+engagement+celebration!+Dress+code:+Spring+Semi-Formal&location=Nai+Restaurant&sf=true" target="_blank" style="font-family: Georgia, serif; font-size: 13px; letter-spacing: 3px; text-transform: uppercase; color: #D4AF37; text-decoration: none;">Add to Calendar</a>
+                                                            <td align="center" style="border: 1px solid #D4AF37; padding: 14px 30px;">
+                                                                <a href="https://calendar.google.com/calendar/render?action=TEMPLATE&text=Marly+%26+Michael%27s+Engagement+Celebration&dates=20260524T220000Z/20260525T030000Z&details=Join+us+for+our+engagement+celebration!+Dress+code:+Spring+Semi-Formal&location=Nai+Restaurant&sf=true" target="_blank" style="font-family: Georgia, serif; font-size: 13px; letter-spacing: 3px; text-transform: uppercase; color: #D4AF37; text-decoration: none;">Google Calendar</a>
+                                                            </td>
+                                                            <td style="width: 10px;">&nbsp;</td>
+                                                            <td align="center" style="border: 1px solid #D4AF37; padding: 14px 30px;">
+                                                                <a href="https://marlybaskha.ca/engagement.ics" target="_blank" style="font-family: Georgia, serif; font-size: 13px; letter-spacing: 3px; text-transform: uppercase; color: #D4AF37; text-decoration: none;">Apple Calendar</a>
                                                             </td>
                                                         </tr>
                                                     </table>
@@ -165,6 +169,35 @@ const EMAIL_TEMPLATE = `<!DOCTYPE html>
     </table>
 </body>
 </html>`;
+
+// ── ICS Calendar Invite ──────────────────────────────────────
+
+const ICS_CONTENT = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//Marly & Michael//Engagement//EN",
+    "CALSCALE:GREGORIAN",
+    "METHOD:PUBLISH",
+    "BEGIN:VEVENT",
+    "DTSTART:20260524T220000Z",
+    "DTEND:20260525T030000Z",
+    "SUMMARY:Marly & Michael's Engagement Celebration",
+    "DESCRIPTION:Join us for our engagement celebration!\\nDress code: Spring Semi-Formal\\n\\nVenue: Nai Restaurant\\nhttps://share.google/CJsTXrNLmr4Mc2SRK",
+    "LOCATION:Nai Restaurant",
+    "URL:https://share.google/CJsTXrNLmr4Mc2SRK",
+    "UID:marly-michael-engagement-20260524@marlybaskha.ca",
+    "STATUS:CONFIRMED",
+    "SEQUENCE:0",
+    "BEGIN:VALARM",
+    "TRIGGER:-PT1H",
+    "ACTION:DISPLAY",
+    "DESCRIPTION:Engagement party in 1 hour!",
+    "END:VALARM",
+    "END:VEVENT",
+    "END:VCALENDAR",
+].join("\r\n");
+
+const ICS_BASE64 = Buffer.from(ICS_CONTENT, "utf-8").toString("base64");
 
 // ── Helpers ──────────────────────────────────────────────────
 
@@ -376,7 +409,14 @@ exports.handler = async (event) => {
                 to: recipients.map(r => ({ email: r.email.trim(), name: r.name || name })),
                 subject: content.subject,
                 html: html,
-                text: text
+                text: text,
+                attachments: [
+                    {
+                        filename: "engagement-celebration.ics",
+                        content: ICS_BASE64,
+                        disposition: "attachment"
+                    }
+                ]
             })
         });
 
