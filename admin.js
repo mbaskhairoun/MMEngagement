@@ -798,11 +798,13 @@ function updateRsvpStats() {
     const attending = allRsvps.filter(r => r.attending === 'yes');
     const declined = allRsvps.filter(r => r.attending === 'no');
     const totalGuests = attending.reduce((sum, r) => sum + (r.totalAttending || r.guestCount || 1), 0);
+    const totalDeclinedMembers = allRsvps.reduce((sum, r) => sum + (r.declinedMembers ? r.declinedMembers.length : (r.attending === 'no' ? (r.totalAttending || r.guestCount || 1) : 0)), 0);
 
     document.getElementById('totalRsvps').textContent = allRsvps.length;
     document.getElementById('attendingCount').textContent = attending.length;
     document.getElementById('declinedCount').textContent = declined.length;
     document.getElementById('totalGuestsCount').textContent = totalGuests;
+    document.getElementById('declinedMembersCount').textContent = totalDeclinedMembers;
 }
 
 function initializeRsvpHandlers() {
