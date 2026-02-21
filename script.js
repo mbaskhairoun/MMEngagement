@@ -525,12 +525,19 @@ function initializeFormHandlers() {
 
     // Show/hide attending fields based on RSVP response
     const attendingRadios = document.querySelectorAll('input[name="attending"]');
+    const householdGroup = document.getElementById('householdMembersGroup');
     attendingRadios.forEach(radio => {
         radio.addEventListener('change', function() {
             if (this.value === 'yes') {
                 attendingFields.style.display = 'block';
+                if (householdGroup) householdGroup.style.display = 'block';
+                // Re-check all members by default when switching to yes
+                document.querySelectorAll('input[name="attendingMember"]').forEach(cb => {
+                    cb.checked = true;
+                });
             } else {
                 attendingFields.style.display = 'none';
+                if (householdGroup) householdGroup.style.display = 'none';
             }
         });
     });
@@ -558,10 +565,13 @@ function initializeFormHandlers() {
             return;
         }
 
-        // Collect attending members from checkboxes
+        // Collect attending and declined members from checkboxes
         const attendingMembers = attendingValue === 'yes'
             ? Array.from(document.querySelectorAll('input[name="attendingMember"]:checked')).map(cb => cb.value)
             : [];
+        const declinedMembers = attendingValue === 'yes'
+            ? Array.from(document.querySelectorAll('input[name="attendingMember"]:not(:checked)')).map(cb => cb.value)
+            : Array.from(document.querySelectorAll('input[name="attendingMember"]')).map(cb => cb.value);
 
         // Collect member emails
         const memberEmails = {};
@@ -589,7 +599,9 @@ function initializeFormHandlers() {
 
             // Household attendance
             attendingMembers: attendingMembers,
+            declinedMembers: declinedMembers,
             totalAttending: attendingMembers.length,
+            totalDeclined: declinedMembers.length,
             memberEmails: memberEmails,
 
             // Guest details (only if attending)
@@ -744,6 +756,7 @@ async function sendRsvpConfirmationEmail(formData, isUpdate) {
                 name: formData.fullName,
                 status: status,
                 attendingMembers: attendingMembers,
+                declinedMembers: formData.declinedMembers || [],
                 emails: emails,
                 isUpdate: isUpdate
             })

@@ -68,6 +68,7 @@ const EMAIL_TEMPLATE = `<!DOCTYPE html>
                                                     <p style="margin: 0 0 15px 0; font-family: Georgia, serif; font-size: 20px; color: #1A1A1A;">{{STATUS}}</p>
                                                     <p style="margin: 0 0 8px 0; font-family: Georgia, serif; font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: #B8962E;">{{MEMBERS_LABEL}}</p>
                                                     <p style="margin: 0; font-family: Georgia, serif; font-size: 16px; color: #1A1A1A; line-height: 1.8;">{{ATTENDING_MEMBERS}}</p>
+                                                    {{DECLINED_SECTION}}
                                                 </td>
                                             </tr>
                                         </table>
@@ -259,11 +260,19 @@ function getEmailContent(isAttending, isUpdate) {
     };
 }
 
-function buildHtml(name, status, attendingMembers, isAttending, isUpdate) {
+function buildHtml(name, status, attendingMembers, declinedMembers, isAttending, isUpdate) {
     const content = getEmailContent(isAttending, isUpdate);
     const membersList = isAttending
         ? attendingMembers.map(m => escapeHtml(m)).join("<br>")
         : "\u2014";
+
+    let declinedSection = "";
+    if (declinedMembers && declinedMembers.length > 0) {
+        const declinedList = declinedMembers.map(m => escapeHtml(m)).join("<br>");
+        declinedSection = `
+                                                    <p style="margin: 15px 0 8px 0; font-family: Georgia, serif; font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: #B8962E;">Unable to Attend</p>
+                                                    <p style="margin: 0; font-family: Georgia, serif; font-size: 16px; color: #999; line-height: 1.8;">${declinedList}</p>`;
+    }
 
     return EMAIL_TEMPLATE
         .replace(/\{\{HEADER_LABEL\}\}/g, content.headerLabel)
@@ -272,15 +281,21 @@ function buildHtml(name, status, attendingMembers, isAttending, isUpdate) {
         .replace("{{STATUS}}", escapeHtml(status))
         .replace("{{MEMBERS_LABEL}}", content.membersLabel)
         .replace("{{ATTENDING_MEMBERS}}", membersList)
+        .replace("{{DECLINED_SECTION}}", declinedSection)
         .replace("{{FOOTER_MESSAGE}}", content.footerMessage);
 }
 
-function buildPlainText(name, status, attendingMembers, isAttending, isUpdate) {
+function buildPlainText(name, status, attendingMembers, declinedMembers, isAttending, isUpdate) {
     const content = getEmailContent(isAttending, isUpdate);
     const membersList = isAttending
         ? attendingMembers.map(m => `  ${m}`).join("\n")
         : "  \u2014";
     const membersLabel = isAttending ? "GUESTS ATTENDING:" : "ATTENDANCE:";
+
+    let declinedSection = "";
+    if (declinedMembers && declinedMembers.length > 0) {
+        declinedSection = `\n\nUNABLE TO ATTEND:\n${declinedMembers.map(m => `  ${m}`).join("\n")}`;
+    }
 
     return `${content.plainHeader}
 
@@ -293,7 +308,7 @@ ${content.plainSubtitle}
 YOUR RESPONSE: ${status}
 
 ${membersLabel}
-${membersList}
+${membersList}${declinedSection}
 
 \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 
@@ -352,7 +367,7 @@ exports.handler = async (event) => {
 
     try {
         const body = JSON.parse(event.body);
-        const { name, status, attendingMembers, emails, isUpdate } = body;
+        const { name, status, attendingMembers, declinedMembers, emails, isUpdate } = body;
 
         // ── Strict input validation ──────────────────────────
 
@@ -379,16 +394,21 @@ exports.handler = async (event) => {
             return { statusCode: 400, body: JSON.stringify({ error: "Invalid attending members" }) };
         }
 
+        if (declinedMembers && (!Array.isArray(declinedMembers) || declinedMembers.length > MAX_MEMBERS)) {
+            return { statusCode: 400, body: JSON.stringify({ error: "Invalid declined members" }) };
+        }
+
         // ── Build email content ──────────────────────────────
 
         const isAttending = status === "Joyfully Accepts";
         const members = isAttending && attendingMembers && attendingMembers.length > 0
             ? attendingMembers
             : [name];
+        const declined = declinedMembers && declinedMembers.length > 0 ? declinedMembers : [];
         const content = getEmailContent(isAttending, !!isUpdate);
 
-        const html = buildHtml(name, status, members, isAttending, !!isUpdate);
-        const text = buildPlainText(name, status, members, isAttending, !!isUpdate);
+        const html = buildHtml(name, status, members, declined, isAttending, !!isUpdate);
+        const text = buildPlainText(name, status, members, declined, isAttending, !!isUpdate);
         const recipients = deduplicateEmails(emails);
 
         if (recipients.length === 0) {

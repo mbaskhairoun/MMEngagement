@@ -688,7 +688,7 @@ let allRsvps = [];
 
 async function loadRsvps() {
     const tbody = document.getElementById('rsvpsTableBody');
-    tbody.innerHTML = '<tr><td colspan="9" class="loading">Loading...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="10" class="loading">Loading...</td></tr>';
 
     try {
         const q = window.firebaseQuery(
@@ -706,7 +706,7 @@ async function loadRsvps() {
         updateRsvpStats();
     } catch (error) {
         console.error('Error loading RSVPs:', error);
-        tbody.innerHTML = '<tr><td colspan="9" class="loading">Error loading RSVPs</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="10" class="loading">Error loading RSVPs</td></tr>';
     }
 }
 
@@ -714,7 +714,7 @@ function renderRsvps(rsvps) {
     const tbody = document.getElementById('rsvpsTableBody');
 
     if (rsvps.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="9" class="loading">No RSVPs yet</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="10" class="loading">No RSVPs yet</td></tr>';
         return;
     }
 
@@ -723,6 +723,9 @@ function renderRsvps(rsvps) {
         const membersDisplay = rsvp.attendingMembers && rsvp.attendingMembers.length > 0
             ? escapeHtml(rsvp.attendingMembers.join(', '))
             : (rsvp.guestCount ? rsvp.guestCount + ' guest(s)' : '1 guest');
+        const declinedDisplay = rsvp.declinedMembers && rsvp.declinedMembers.length > 0
+            ? escapeHtml(rsvp.declinedMembers.join(', '))
+            : '-';
         return `
             <tr data-id="${rsvp.id}" data-guest-id="${rsvp.guestId || ''}">
                 <td>${escapeHtml(rsvp.fullName)}</td>
@@ -733,6 +736,7 @@ function renderRsvps(rsvps) {
                     </span>
                 </td>
                 <td>${membersDisplay}</td>
+                <td>${declinedDisplay}</td>
                 <td>${escapeHtml(rsvp.mealPreference || '-')}</td>
                 <td>${escapeHtml(rsvp.dietaryRestrictions || '-')}</td>
                 <td>${escapeHtml(rsvp.message || '-')}</td>
@@ -817,6 +821,7 @@ function initializeRsvpHandlers() {
             'Attending': rsvp.attending === 'yes' ? 'Yes' : 'No',
             'Total Attending': rsvp.totalAttending || rsvp.guestCount || 1,
             'Attending Members': rsvp.attendingMembers ? rsvp.attendingMembers.join(', ') : (rsvp.guestNames || ''),
+            'Declined Members': rsvp.declinedMembers ? rsvp.declinedMembers.join(', ') : '',
             'Relationship': rsvp.relationship || '',
             'Meal Preference': rsvp.mealPreference || '',
             'Dietary Restrictions': rsvp.dietaryRestrictions || '',
