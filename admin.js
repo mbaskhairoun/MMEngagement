@@ -589,16 +589,29 @@ async function loadSettings() {
         const docSnap = await window.firebaseGetDoc(docRef);
 
         let fields = defaultSettings;
-        if (docSnap.exists() && docSnap.data().fields) {
-            fields = { ...defaultSettings, ...docSnap.data().fields };
+        let rsvpDisabled = false;
+        if (docSnap.exists()) {
+            if (docSnap.data().fields) {
+                fields = { ...defaultSettings, ...docSnap.data().fields };
+            }
+            rsvpDisabled = !!docSnap.data().rsvpDisabled;
         }
 
-        // Update checkboxes
+        // Update field checkboxes
         for (const [key, value] of Object.entries(fields)) {
             const checkbox = document.getElementById(`field-${key}`);
             if (checkbox) {
                 checkbox.checked = value;
             }
+        }
+
+        // Update RSVP toggle
+        const rsvpToggle = document.getElementById('rsvpEnabledToggle');
+        const rsvpLabel = document.getElementById('rsvpStatusLabel');
+        if (rsvpToggle) {
+            rsvpToggle.checked = !rsvpDisabled;
+            rsvpLabel.textContent = rsvpDisabled ? 'RSVPs are Closed' : 'RSVPs are Open';
+            rsvpLabel.style.color = rsvpDisabled ? '#e74c3c' : '#27ae60';
         }
     } catch (error) {
         console.error('Error loading settings:', error);
@@ -609,6 +622,7 @@ function initializeSettingsHandlers() {
     const saveBtn = document.getElementById('saveSettingsBtn');
     const messageDiv = document.getElementById('settingsMessage');
 
+    // Save form field settings
     saveBtn.addEventListener('click', async () => {
         const fields = {};
         document.querySelectorAll('.settings-grid input[type="checkbox"]').forEach(checkbox => {
@@ -622,7 +636,8 @@ function initializeSettingsHandlers() {
                 {
                     fields: fields,
                     updatedAt: window.firebaseServerTimestamp()
-                }
+                },
+                { merge: true }
             );
 
             messageDiv.textContent = 'Settings saved successfully!';
@@ -633,6 +648,34 @@ function initializeSettingsHandlers() {
         } catch (error) {
             console.error('Error saving settings:', error);
             alert('Error saving settings. Please try again.');
+        }
+    });
+
+    // RSVP open/close toggle — saves instantly
+    const rsvpToggle = document.getElementById('rsvpEnabledToggle');
+    const rsvpLabel = document.getElementById('rsvpStatusLabel');
+
+    rsvpToggle.addEventListener('change', async () => {
+        const isOpen = rsvpToggle.checked;
+        rsvpLabel.textContent = isOpen ? 'RSVPs are Open' : 'RSVPs are Closed';
+        rsvpLabel.style.color = isOpen ? '#27ae60' : '#e74c3c';
+
+        try {
+            await window.firebaseSetDoc(
+                window.firebaseDoc(window.firebaseDb, 'settings', 'formConfig'),
+                {
+                    rsvpDisabled: !isOpen,
+                    updatedAt: window.firebaseServerTimestamp()
+                },
+                { merge: true }
+            );
+        } catch (error) {
+            console.error('Error updating RSVP status:', error);
+            // Revert toggle on failure
+            rsvpToggle.checked = !isOpen;
+            rsvpLabel.textContent = !isOpen ? 'RSVPs are Open' : 'RSVPs are Closed';
+            rsvpLabel.style.color = !isOpen ? '#27ae60' : '#e74c3c';
+            alert('Failed to update RSVP status. Please try again.');
         }
     });
 }

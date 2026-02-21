@@ -31,6 +31,28 @@ async function initializeRsvpSystem() {
     // Load form settings
     await loadFormSettings();
 
+    // Check if RSVPs are disabled by admin
+    try {
+        const settingsRef = window.firebaseDoc(window.firebaseDb, 'settings', 'formConfig');
+        const settingsSnap = await window.firebaseGetDoc(settingsRef);
+        if (settingsSnap.exists() && settingsSnap.data().rsvpDisabled) {
+            const verificationStep = document.getElementById('verificationStep');
+            if (verificationStep) {
+                verificationStep.innerHTML = `
+                    <div class="verification-content">
+                        <p class="verification-intro">RSVPs are currently closed.</p>
+                        <p style="font-family: Georgia, serif; color: #6B6B6B; font-size: 1rem;">
+                            If you still need to respond, please contact us directly.
+                        </p>
+                    </div>
+                `;
+            }
+            return;
+        }
+    } catch (err) {
+        console.error('Error checking RSVP status:', err);
+    }
+
     // Initialize verification
     initializeVerification();
 

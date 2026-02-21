@@ -506,6 +506,18 @@ body {
     font-size: 1.2rem;
     font-style: italic;
     color: var(--charcoal);
+    margin-bottom: 0.75rem;
+    position: relative;
+    z-index: 1;
+}
+
+.rsvp-deadline {
+    text-align: center;
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--gold-dark);
     margin-bottom: 3rem;
     position: relative;
     z-index: 1;
