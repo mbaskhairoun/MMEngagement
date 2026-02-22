@@ -165,6 +165,31 @@ function initializeVerification() {
     });
 }
 
+// Levenshtein edit distance between two strings
+function levenshtein(a, b) {
+    const m = a.length, n = b.length;
+    const dp = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+    for (let i = 0; i <= m; i++) dp[i][0] = i;
+    for (let j = 0; j <= n; j++) dp[0][j] = j;
+    for (let i = 1; i <= m; i++) {
+        for (let j = 1; j <= n; j++) {
+            dp[i][j] = a[i - 1] === b[j - 1]
+                ? dp[i - 1][j - 1]
+                : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
+        }
+    }
+    return dp[m][n];
+}
+
+// Fuzzy match score — lower is better. Returns Infinity if not close enough.
+function fuzzyScore(typedLower, candidateLower) {
+    const dist = levenshtein(typedLower, candidateLower);
+    const maxLen = Math.max(typedLower.length, candidateLower.length);
+    // Allow up to ~30% edit distance or max 3 edits for short names
+    const threshold = Math.max(3, Math.ceil(maxLen * 0.3));
+    return dist <= threshold ? dist : Infinity;
+}
+
 // Check if all typed words match the start of name words
 function wordsMatch(typedLower, candidateLower) {
     const typedWords = typedLower.split(/\s+/).filter(Boolean);
@@ -271,6 +296,53 @@ async function handleVerification() {
                     showMatchSelection(candidates);
                     return;
                 }
+
+                // Step 4: Fuzzy match (Levenshtein) for typos
+                if (!foundGuest && candidates.length === 0) {
+                    const fuzzyCandidates = [];
+
+                    allGuestsSnapshot.forEach(doc => {
+                        const guestData = doc.data();
+                        const guestNameLower = guestData.nameLower || guestData.name.toLowerCase();
+                        const members = guestData.familyMembers || [];
+                        const membersLower = guestData.familyMembersLower || members.map(m => m.toLowerCase());
+
+                        // Check invitation name
+                        const invScore = fuzzyScore(nameLower, guestNameLower);
+                        if (invScore !== Infinity) {
+                            fuzzyCandidates.push({
+                                guest: { id: doc.id, ...guestData },
+                                matchedName: guestData.name,
+                                displayLabel: guestData.name + (members.length > 1 ? ` (${members.length} guests)` : ''),
+                                score: invScore
+                            });
+                            return;
+                        }
+
+                        // Check family members
+                        for (let i = 0; i < membersLower.length; i++) {
+                            const memScore = fuzzyScore(nameLower, membersLower[i]);
+                            if (memScore !== Infinity) {
+                                fuzzyCandidates.push({
+                                    guest: { id: doc.id, ...guestData },
+                                    matchedName: members[i],
+                                    displayLabel: members[i] + ` (${guestData.name} invitation)`,
+                                    score: memScore
+                                });
+                                return;
+                            }
+                        }
+                    });
+
+                    if (fuzzyCandidates.length > 0) {
+                        // Sort by best score and show as suggestions
+                        fuzzyCandidates.sort((a, b) => a.score - b.score);
+                        // Limit to top 5 suggestions
+                        const topSuggestions = fuzzyCandidates.slice(0, 5);
+                        showMatchSelection(topSuggestions, true);
+                        return;
+                    }
+                }
             }
         }
 
@@ -292,11 +364,15 @@ async function handleVerification() {
     }
 }
 
-function showMatchSelection(candidates) {
+function showMatchSelection(candidates, isFuzzy) {
     const matchSelection = document.getElementById('matchSelection');
     const matchList = document.getElementById('matchList');
 
-    matchList.innerHTML = candidates.map((c, idx) => `
+    const heading = isFuzzy
+        ? '<p style="margin-bottom: 10px; color: #6B6B6B; font-family: Georgia, serif;">Did you mean:</p>'
+        : '';
+
+    matchList.innerHTML = heading + candidates.map((c, idx) => `
         <button type="button" class="match-option" data-index="${idx}">
             ${escapeHtml(c.displayLabel)}
         </button>
