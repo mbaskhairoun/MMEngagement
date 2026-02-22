@@ -525,19 +525,12 @@ function initializeFormHandlers() {
 
     // Show/hide attending fields based on RSVP response
     const attendingRadios = document.querySelectorAll('input[name="attending"]');
-    const householdGroup = document.getElementById('householdMembersGroup');
     attendingRadios.forEach(radio => {
         radio.addEventListener('change', function() {
             if (this.value === 'yes') {
                 attendingFields.style.display = 'block';
-                if (householdGroup) householdGroup.style.display = 'block';
-                // Re-check all members by default when switching to yes
-                document.querySelectorAll('input[name="attendingMember"]').forEach(cb => {
-                    cb.checked = true;
-                });
             } else {
                 attendingFields.style.display = 'none';
-                if (householdGroup) householdGroup.style.display = 'none';
             }
         });
     });
