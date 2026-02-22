@@ -636,7 +636,20 @@ function initializeFormHandlers() {
         formMessage.style.display = 'none';
 
         try {
-            const existingRsvpId = document.getElementById('existingRsvpId').value;
+            let existingRsvpId = document.getElementById('existingRsvpId').value;
+
+            // Final check: re-query for existing RSVP to prevent duplicates
+            // (another household member may have submitted between form load and now)
+            if (!existingRsvpId) {
+                const dupeCheck = window.firebaseQuery(
+                    window.firebaseCollection(window.firebaseDb, 'rsvps'),
+                    window.firebaseWhere('guestId', '==', currentGuest.id)
+                );
+                const dupeSnap = await window.firebaseGetDocs(dupeCheck);
+                if (!dupeSnap.empty) {
+                    existingRsvpId = dupeSnap.docs[0].id;
+                }
+            }
 
             if (existingRsvpId) {
                 // Update existing RSVP
