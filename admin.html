@@ -327,8 +327,20 @@
                     </div>
                 </div>
 
+                <div class="rsvp-view-controls">
+                    <div class="view-toggle-group">
+                        <button class="btn btn-secondary view-toggle active" data-view="invitation">By Invitation</button>
+                        <button class="btn btn-secondary view-toggle" data-view="guest">By Guest</button>
+                    </div>
+                    <div class="guest-filter-group" id="guestFilterGroup" style="display: none;">
+                        <button class="btn btn-secondary guest-filter active" data-filter="all">All</button>
+                        <button class="btn btn-secondary guest-filter" data-filter="attending">Attending</button>
+                        <button class="btn btn-secondary guest-filter" data-filter="not-attending">Not Attending</button>
+                    </div>
+                </div>
+
                 <table id="rsvpsTable" class="data-table">
-                    <thead>
+                    <thead id="rsvpsTableHead">
                         <tr>
                             <th>Name</th>
                             <th>Email</th>

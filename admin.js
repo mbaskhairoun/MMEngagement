@@ -685,6 +685,8 @@ function initializeSettingsHandlers() {
 // ============================================
 
 let allRsvps = [];
+let rsvpViewMode = 'invitation'; // 'invitation' or 'guest'
+let rsvpGuestFilter = 'all'; // 'all', 'attending', 'not-attending'
 
 async function loadRsvps() {
     const tbody = document.getElementById('rsvpsTableBody');
@@ -702,7 +704,7 @@ async function loadRsvps() {
             allRsvps.push({ id: doc.id, ...doc.data() });
         });
 
-        renderRsvps(allRsvps);
+        renderCurrentRsvpView();
         updateRsvpStats();
     } catch (error) {
         console.error('Error loading RSVPs:', error);
@@ -711,7 +713,24 @@ async function loadRsvps() {
 }
 
 function renderRsvps(rsvps) {
+    const thead = document.getElementById('rsvpsTableHead');
     const tbody = document.getElementById('rsvpsTableBody');
+
+    // Restore invitation view headers
+    thead.innerHTML = `
+        <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Attending</th>
+            <th>Attending Members</th>
+            <th>Declined Members</th>
+            <th>Meal</th>
+            <th>Dietary</th>
+            <th>Message</th>
+            <th>Submitted</th>
+            <th>Actions</th>
+        </tr>
+    `;
 
     if (rsvps.length === 0) {
         tbody.innerHTML = '<tr><td colspan="10" class="loading">No RSVPs yet</td></tr>';
@@ -807,7 +826,147 @@ function updateRsvpStats() {
     document.getElementById('declinedMembersCount').textContent = totalDeclinedMembers;
 }
 
+function renderCurrentRsvpView() {
+    if (rsvpViewMode === 'guest') {
+        renderGuestView();
+    } else {
+        renderRsvps(allRsvps);
+    }
+}
+
+function renderGuestView() {
+    const thead = document.getElementById('rsvpsTableHead');
+    const tbody = document.getElementById('rsvpsTableBody');
+
+    // Set guest view headers
+    thead.innerHTML = `
+        <tr>
+            <th>Guest Name</th>
+            <th>Invitation</th>
+            <th>Status</th>
+            <th>Email</th>
+            <th>Submitted</th>
+        </tr>
+    `;
+
+    // Build flat list of individual guests from all RSVPs
+    let guests = [];
+
+    allRsvps.forEach(rsvp => {
+        const date = rsvp.createdAt?.toDate ? rsvp.createdAt.toDate() : new Date(rsvp.submittedAt);
+        const dateStr = date.toLocaleDateString();
+
+        if (rsvp.attending === 'yes') {
+            // Attending members
+            if (rsvp.attendingMembers && rsvp.attendingMembers.length > 0) {
+                rsvp.attendingMembers.forEach(name => {
+                    const email = (rsvp.memberEmails && rsvp.memberEmails[name]) || '';
+                    guests.push({
+                        name: name,
+                        invitation: rsvp.invitationName || rsvp.fullName,
+                        status: 'attending',
+                        email: email || (name === rsvp.fullName ? rsvp.email : ''),
+                        date: dateStr
+                    });
+                });
+            }
+            // Declined members from a partially attending RSVP
+            if (rsvp.declinedMembers && rsvp.declinedMembers.length > 0) {
+                rsvp.declinedMembers.forEach(name => {
+                    const email = (rsvp.memberEmails && rsvp.memberEmails[name]) || '';
+                    guests.push({
+                        name: name,
+                        invitation: rsvp.invitationName || rsvp.fullName,
+                        status: 'not-attending',
+                        email: email || '',
+                        date: dateStr
+                    });
+                });
+            }
+        } else {
+            // Entire invitation declined
+            if (rsvp.declinedMembers && rsvp.declinedMembers.length > 0) {
+                rsvp.declinedMembers.forEach(name => {
+                    const email = (rsvp.memberEmails && rsvp.memberEmails[name]) || '';
+                    guests.push({
+                        name: name,
+                        invitation: rsvp.invitationName || rsvp.fullName,
+                        status: 'not-attending',
+                        email: email || (name === rsvp.fullName ? rsvp.email : ''),
+                        date: dateStr
+                    });
+                });
+            } else {
+                // Legacy RSVP without declinedMembers
+                guests.push({
+                    name: rsvp.fullName,
+                    invitation: rsvp.invitationName || rsvp.fullName,
+                    status: 'not-attending',
+                    email: rsvp.email || '',
+                    date: dateStr
+                });
+            }
+        }
+    });
+
+    // Apply filter
+    if (rsvpGuestFilter === 'attending') {
+        guests = guests.filter(g => g.status === 'attending');
+    } else if (rsvpGuestFilter === 'not-attending') {
+        guests = guests.filter(g => g.status === 'not-attending');
+    }
+
+    // Sort: attending first, then by name
+    guests.sort((a, b) => {
+        if (a.status !== b.status) return a.status === 'attending' ? -1 : 1;
+        return a.name.localeCompare(b.name);
+    });
+
+    if (guests.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="loading">No guests found</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = guests.map(g => `
+        <tr>
+            <td>${escapeHtml(g.name)}</td>
+            <td>${escapeHtml(g.invitation)}</td>
+            <td>
+                <span class="status-badge ${g.status === 'attending' ? 'confirmed' : 'declined'}">
+                    ${g.status === 'attending' ? 'Attending' : 'Not Attending'}
+                </span>
+            </td>
+            <td>${escapeHtml(g.email || '-')}</td>
+            <td>${g.date}</td>
+        </tr>
+    `).join('');
+}
+
 function initializeRsvpHandlers() {
+    // View toggle (By Invitation / By Guest)
+    document.querySelectorAll('.view-toggle').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.view-toggle').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            rsvpViewMode = btn.dataset.view;
+
+            const filterGroup = document.getElementById('guestFilterGroup');
+            filterGroup.style.display = rsvpViewMode === 'guest' ? 'flex' : 'none';
+
+            renderCurrentRsvpView();
+        });
+    });
+
+    // Guest filter (All / Attending / Not Attending)
+    document.querySelectorAll('.guest-filter').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.guest-filter').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            rsvpGuestFilter = btn.dataset.filter;
+            renderCurrentRsvpView();
+        });
+    });
+
     const exportBtn = document.getElementById('exportRsvpsBtn');
 
     exportBtn.addEventListener('click', () => {
