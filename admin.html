@@ -118,6 +118,11 @@
 
                 <div class="search-bar">
                     <input type="text" id="guestSearch" placeholder="Search guests...">
+                    <div class="guest-list-filter-group">
+                        <button class="btn btn-secondary guest-list-filter active" data-filter="all">All</button>
+                        <button class="btn btn-secondary guest-list-filter" data-filter="rsvped">RSVPed</button>
+                        <button class="btn btn-secondary guest-list-filter" data-filter="pending">Not RSVPed</button>
+                    </div>
                     <div class="guest-stats">
                         <span id="totalGuests">0</span> guests |
                         <span id="rsvpedGuests">0</span> RSVPed

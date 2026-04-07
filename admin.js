@@ -107,6 +107,7 @@ async function loadDashboardData() {
 
 let allGuests = [];
 let currentFamilyMembers = [];
+let guestListFilter = 'all'; // 'all', 'rsvped', 'pending'
 
 async function loadGuests() {
     const tbody = document.getElementById('guestsTableBody');
@@ -322,15 +323,40 @@ function initializeGuestHandlers() {
         });
     });
 
-    // Search
-    searchInput.addEventListener('input', (e) => {
-        const query = e.target.value.toLowerCase();
-        const filtered = allGuests.filter(g =>
-            g.name.toLowerCase().includes(query) ||
-            (g.email && g.email.toLowerCase().includes(query)) ||
-            (g.familyMembers && g.familyMembers.some(m => m.toLowerCase().includes(query)))
-        );
+    // Combined search + filter
+    function applyGuestFilters() {
+        const query = searchInput.value.toLowerCase();
+        let filtered = allGuests;
+
+        // Text search
+        if (query) {
+            filtered = filtered.filter(g =>
+                g.name.toLowerCase().includes(query) ||
+                (g.email && g.email.toLowerCase().includes(query)) ||
+                (g.familyMembers && g.familyMembers.some(m => m.toLowerCase().includes(query)))
+            );
+        }
+
+        // RSVP filter
+        if (guestListFilter === 'rsvped') {
+            filtered = filtered.filter(g => g.hasRsvped);
+        } else if (guestListFilter === 'pending') {
+            filtered = filtered.filter(g => !g.hasRsvped);
+        }
+
         renderGuests(filtered);
+    }
+
+    searchInput.addEventListener('input', applyGuestFilters);
+
+    // RSVP filter buttons
+    document.querySelectorAll('.guest-list-filter').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.guest-list-filter').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            guestListFilter = btn.dataset.filter;
+            applyGuestFilters();
+        });
     });
 
     // Download template
@@ -970,31 +996,73 @@ function initializeRsvpHandlers() {
     const exportBtn = document.getElementById('exportRsvpsBtn');
 
     exportBtn.addEventListener('click', () => {
-        if (allRsvps.length === 0) {
-            alert('No RSVPs to export');
+        if (allRsvps.length === 0 && allGuests.length === 0) {
+            alert('No data to export');
             return;
         }
 
-        const exportData = allRsvps.map(rsvp => ({
-            'Name': rsvp.fullName,
-            'Email': rsvp.email,
-            'Phone': rsvp.phone || '',
-            'Attending': rsvp.attending === 'yes' ? 'Yes' : 'No',
-            'Total Attending': rsvp.totalAttending || rsvp.guestCount || 1,
-            'Attending Members': rsvp.attendingMembers ? rsvp.attendingMembers.join(', ') : (rsvp.guestNames || ''),
-            'Declined Members': rsvp.declinedMembers ? rsvp.declinedMembers.join(', ') : '',
-            'Relationship': rsvp.relationship || '',
-            'Meal Preference': rsvp.mealPreference || '',
-            'Dietary Restrictions': rsvp.dietaryRestrictions || '',
-            'Children Count': rsvp.childrenCount || 0,
-            'Children Ages': rsvp.childrenAges || '',
-            'Song Request': rsvp.songRequest || '',
-            'Transport Needed': rsvp.transportNeeded ? 'Yes' : 'No',
-            'Accommodation Needed': rsvp.accommodationNeeded ? 'Yes' : 'No',
-            'Special Requests': rsvp.specialRequests || '',
-            'Message': rsvp.message || '',
-            'Submitted': rsvp.createdAt?.toDate ? rsvp.createdAt.toDate().toLocaleDateString() : rsvp.submittedAt
-        }));
+        // Build a map of guestId -> rsvp for quick lookup
+        const rsvpByGuestId = {};
+        allRsvps.forEach(rsvp => {
+            if (rsvp.guestId) rsvpByGuestId[rsvp.guestId] = rsvp;
+        });
+
+        const exportData = [];
+
+        // Go through all guests (invitations)
+        allGuests.forEach(guest => {
+            const rsvp = rsvpByGuestId[guest.id];
+            const members = guest.familyMembers || [guest.name];
+
+            if (rsvp) {
+                // Has RSVPed — add each member with their status
+                const attendingSet = new Set(rsvp.attendingMembers || []);
+                const declinedSet = new Set(rsvp.declinedMembers || []);
+
+                members.forEach(member => {
+                    let status = 'No Response';
+                    if (attendingSet.has(member)) status = 'Attending';
+                    else if (declinedSet.has(member)) status = 'Not Attending';
+                    else if (rsvp.attending === 'no') status = 'Not Attending';
+                    else if (rsvp.attending === 'yes' && attendingSet.size === 0) status = 'Attending';
+
+                    exportData.push({
+                        'Guest Name': member,
+                        'Invitation': guest.name,
+                        'RSVP Status': status,
+                        'Email': (rsvp.memberEmails && rsvp.memberEmails[member]) || (member === rsvp.fullName ? rsvp.email : '') || '',
+                        'Phone': member === rsvp.fullName ? (rsvp.phone || '') : '',
+                        'Meal Preference': status === 'Attending' ? (rsvp.mealPreference || '') : '',
+                        'Dietary Restrictions': status === 'Attending' ? (rsvp.dietaryRestrictions || '') : '',
+                        'Children Count': rsvp.childrenCount || 0,
+                        'Children Ages': rsvp.childrenAges || '',
+                        'Song Request': rsvp.songRequest || '',
+                        'Special Requests': rsvp.specialRequests || '',
+                        'Message': rsvp.message || '',
+                        'Submitted': rsvp.createdAt?.toDate ? rsvp.createdAt.toDate().toLocaleDateString() : (rsvp.submittedAt || '')
+                    });
+                });
+            } else {
+                // Has NOT RSVPed — add each member as "No Response"
+                members.forEach(member => {
+                    exportData.push({
+                        'Guest Name': member,
+                        'Invitation': guest.name,
+                        'RSVP Status': 'No Response',
+                        'Email': guest.email || '',
+                        'Phone': '',
+                        'Meal Preference': '',
+                        'Dietary Restrictions': '',
+                        'Children Count': 0,
+                        'Children Ages': '',
+                        'Song Request': '',
+                        'Special Requests': '',
+                        'Message': '',
+                        'Submitted': ''
+                    });
+                });
+            }
+        });
 
         const ws = XLSX.utils.json_to_sheet(exportData);
         const wb = XLSX.utils.book_new();

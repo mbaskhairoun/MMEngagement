@@ -904,6 +904,33 @@ body {
     border-color: var(--primary-green);
 }
 
+/* Guest list filters */
+.guest-list-filter-group {
+    display: flex;
+    gap: 0;
+}
+
+.guest-list-filter-group .btn {
+    border-radius: 0;
+    margin: 0;
+    font-size: 0.85rem;
+    padding: 0.4rem 1rem;
+}
+
+.guest-list-filter-group .btn:first-child {
+    border-radius: 6px 0 0 6px;
+}
+
+.guest-list-filter-group .btn:last-child {
+    border-radius: 0 6px 6px 0;
+}
+
+.guest-list-filter.active {
+    background: var(--primary-green);
+    color: var(--white);
+    border-color: var(--primary-green);
+}
+
 .recipient-filters {
     display: flex;
     gap: 0.5rem;
