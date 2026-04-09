@@ -587,6 +587,20 @@ h3 { font-size: 1.2rem; }
     cursor: grab;
     transition: all 0.15s;
     box-shadow: var(--shadow-sm);
+    min-height: 88px;
+    max-height: 88px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.task-slot-placeholder {
+    min-height: 88px;
+    max-height: 88px;
+    border: 1px dashed rgba(212, 175, 55, 0.2);
+    border-radius: var(--radius-sm);
+    background: transparent;
+    pointer-events: none;
 }
 
 .task-card:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); }

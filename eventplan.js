@@ -528,17 +528,105 @@ function renderTasks() {
     else renderTaskCalendar();
 }
 
+// Group tasks into dependency chains and assign row numbers so linked
+// tasks line up horizontally across kanban columns.
+function computeTaskRows(tasks) {
+    const ids = new Set(tasks.map(t => t.id));
+    const parent = {};
+    const find = (x) => parent[x] === x ? x : (parent[x] = find(parent[x]));
+    const union = (a, b) => { parent[find(a)] = find(b); };
+
+    tasks.forEach(t => parent[t.id] = t.id);
+    tasks.forEach(t => {
+        (t.dependencies || []).forEach(dep => {
+            if (ids.has(dep)) union(t.id, dep);
+        });
+        // Also chain tasks that depend on this one (already covered by union above
+        // when iterating their deps, but this catches the reverse lookup edge case)
+    });
+
+    // Group by chain root
+    const groups = {};
+    tasks.forEach(t => {
+        const root = find(t.id);
+        if (!groups[root]) groups[root] = [];
+        groups[root].push(t);
+    });
+
+    const rowMap = {};
+    const chainedIds = new Set();
+    let nextRow = 0;
+    const STATUSES = ['todo', 'doing', 'review', 'done'];
+
+    // Only real chains: more than 1 task spanning multiple columns
+    const chains = Object.values(groups).filter(chain => {
+        if (chain.length < 2) return false;
+        const cols = new Set(chain.map(t => t.status || 'todo'));
+        return cols.size > 1;
+    });
+
+    // Longest chains first for tidier layout
+    chains.sort((a, b) => b.length - a.length);
+
+    chains.forEach(chain => {
+        const byStatus = { todo: [], doing: [], review: [], done: [] };
+        chain.forEach(t => {
+            const s = STATUSES.includes(t.status) ? t.status : 'todo';
+            byStatus[s].push(t);
+            chainedIds.add(t.id);
+        });
+        const rowsNeeded = Math.max(
+            byStatus.todo.length,
+            byStatus.doing.length,
+            byStatus.review.length,
+            byStatus.done.length
+        );
+        for (let i = 0; i < rowsNeeded; i++) {
+            STATUSES.forEach(s => {
+                if (byStatus[s][i]) rowMap[byStatus[s][i].id] = nextRow + i;
+            });
+        }
+        nextRow += rowsNeeded;
+    });
+
+    return { rowMap, chainedIds, maxRow: nextRow };
+}
+
 function renderKanban() {
     const tasks = filteredTasks();
     const statuses = ['todo', 'doing', 'review', 'done'];
+    const { rowMap, chainedIds, maxRow } = computeTaskRows(tasks);
+
     statuses.forEach(status => {
         const list = document.querySelector(`.kanban-list[data-status="${status}"]`);
         const items = tasks.filter(t => (t.status || 'todo') === status);
         document.getElementById('kanbanCount' + status.charAt(0).toUpperCase() + status.slice(1)).textContent = items.length;
 
-        list.innerHTML = items.map(t => taskCardHtml(t)).join('') || '<div class="empty-state" style="padding:1rem;font-size:.8rem">Drop tasks here</div>';
+        // Split chained vs unchained items
+        const chainedItems = items.filter(t => chainedIds.has(t.id));
+        const unchainedItems = items.filter(t => !chainedIds.has(t.id));
 
-        // Click to edit
+        // Slot array indexed by row; fill with chained tasks for this column
+        const slots = new Array(maxRow).fill(null);
+        chainedItems.forEach(t => {
+            if (rowMap[t.id] !== undefined) slots[rowMap[t.id]] = t;
+        });
+
+        let html = '';
+        for (let i = 0; i < maxRow; i++) {
+            if (slots[i]) {
+                html += taskCardHtml(slots[i]);
+            } else {
+                // Empty placeholder to keep alignment across columns
+                html += '<div class="task-slot-placeholder"></div>';
+            }
+        }
+        // Unchained tasks go below the aligned section
+        unchainedItems.forEach(t => { html += taskCardHtml(t); });
+
+        list.innerHTML = html || '<div class="empty-state" style="padding:1rem;font-size:.8rem">Drop tasks here</div>';
+
+        // Click to edit + drag
         list.querySelectorAll('.task-card').forEach(card => {
             card.addEventListener('click', () => {
                 const task = getTaskById(card.dataset.id);
