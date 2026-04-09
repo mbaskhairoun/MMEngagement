@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Event Plan — Marly & Michael</title>
+    <link rel="stylesheet" href="eventplan.css">
+    <link rel="icon" type="image/jpeg" href="Logo.jpeg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, setDoc, getDoc, query, orderBy, where, serverTimestamp, writeBatch, onSnapshot } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js";
+        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBCtD1ZhcUND9bbOo1t7bqwiTB64asWVuY",
+            authDomain: "mmrsvps-95e2a.firebaseapp.com",
+            databaseURL: "https://mmrsvps-95e2a-default-rtdb.firebaseio.com",
+            projectId: "mmrsvps-95e2a",
+            storageBucket: "mmrsvps-95e2a.firebasestorage.app",
+            messagingSenderId: "404940644347",
+            appId: "1:404940644347:web:2bd0cc03c3832e8038b55e",
+            measurementId: "G-2BBH6CDRY2"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        window.firebaseDb = db;
+        window.firebaseAuth = auth;
+        window.firebaseCollection = collection;
+        window.firebaseAddDoc = addDoc;
+        window.firebaseGetDocs = getDocs;
+        window.firebaseDoc = doc;
+        window.firebaseUpdateDoc = updateDoc;
+        window.firebaseDeleteDoc = deleteDoc;
+        window.firebaseSetDoc = setDoc;
+        window.firebaseGetDoc = getDoc;
+        window.firebaseQuery = query;
+        window.firebaseOrderBy = orderBy;
+        window.firebaseWhere = where;
+        window.firebaseServerTimestamp = serverTimestamp;
+        window.firebaseWriteBatch = writeBatch;
+        window.firebaseOnSnapshot = onSnapshot;
+        window.firebaseSignIn = signInWithEmailAndPassword;
+        window.firebaseSignOut = signOut;
+        window.firebaseOnAuthStateChanged = onAuthStateChanged;
+    </script>
+</head>
+<body>
+    <!-- Login -->
+    <div id="loginSection" class="login-section">
+        <div class="login-card">
+            <div class="login-header">
+                <img src="Logo.jpeg" alt="Logo" class="login-logo">
+                <h1>Event Plan</h1>
+                <p>Marly & Michael's Engagement</p>
+            </div>
+            <form id="loginForm" class="login-form">
+                <div class="form-group">
+                    <label for="loginEmail">Email</label>
+                    <input type="email" id="loginEmail" required>
+                </div>
+                <div class="form-group">
+                    <label for="loginPassword">Password</label>
+                    <input type="password" id="loginPassword" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Sign In</button>
+                <div id="loginError" class="error-message"></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="appSection" class="app-section" style="display: none;">
+        <header class="app-header">
+            <div class="header-left">
+                <img src="Logo.jpeg" alt="Logo" class="header-logo">
+                <div>
+                    <h1>Event Plan</h1>
+                    <p class="header-subtitle">Marly & Michael — <span id="daysToEvent">—</span> days to go</p>
+                </div>
+            </div>
+            <div class="header-right">
+                <span id="userEmail" class="user-email"></span>
+                <button id="logoutBtn" class="btn btn-ghost">Logout</button>
+            </div>
+        </header>
+
+        <nav class="app-nav">
+            <button class="nav-tab active" data-tab="dashboard">
+                <span class="nav-icon">◆</span> Dashboard
+            </button>
+            <button class="nav-tab" data-tab="budget">
+                <span class="nav-icon">$</span> Budget
+            </button>
+            <button class="nav-tab" data-tab="tasks">
+                <span class="nav-icon">✓</span> Tasks
+            </button>
+            <button class="nav-tab" data-tab="team">
+                <span class="nav-icon">♦</span> Team
+            </button>
+            <button class="nav-tab" data-tab="timeline">
+                <span class="nav-icon">⏱</span> Day-Of Timeline
+            </button>
+            <button class="nav-tab" data-tab="vendors">
+                <span class="nav-icon">⌂</span> Vendors
+            </button>
+            <button class="nav-tab" data-tab="notes">
+                <span class="nav-icon">✎</span> Notes
+            </button>
+        </nav>
+
+        <main class="app-content">
+            <!-- Dashboard Tab -->
+            <div id="dashboardTab" class="tab-content active">
+                <div class="dashboard-grid">
+                    <div class="dash-card highlight">
+                        <div class="dash-label">Days Until Event</div>
+                        <div class="dash-value" id="dashDaysToEvent">—</div>
+                        <div class="dash-sub">May 24, 2026</div>
+                    </div>
+                    <div class="dash-card">
+                        <div class="dash-label">Budget Used</div>
+                        <div class="dash-value" id="dashBudgetUsed">$0</div>
+                        <div class="dash-progress">
+                            <div class="dash-progress-bar" id="dashBudgetBar"></div>
+                        </div>
+                        <div class="dash-sub" id="dashBudgetTotal">of $0 planned</div>
+                    </div>
+                    <div class="dash-card">
+                        <div class="dash-label">Tasks Completed</div>
+                        <div class="dash-value" id="dashTasksDone">0 / 0</div>
+                        <div class="dash-progress">
+                            <div class="dash-progress-bar" id="dashTasksBar"></div>
+                        </div>
+                        <div class="dash-sub" id="dashTasksPct">0%</div>
+                    </div>
+                    <div class="dash-card">
+                        <div class="dash-label">Team Members</div>
+                        <div class="dash-value" id="dashTeamCount">0</div>
+                        <div class="dash-sub">people helping</div>
+                    </div>
+                    <div class="dash-card">
+                        <div class="dash-label">Overdue Tasks</div>
+                        <div class="dash-value danger" id="dashOverdue">0</div>
+                        <div class="dash-sub">need attention</div>
+                    </div>
+                    <div class="dash-card">
+                        <div class="dash-label">Vendors Booked</div>
+                        <div class="dash-value" id="dashVendors">0</div>
+                        <div class="dash-sub" id="dashVendorCategories">0 categories</div>
+                    </div>
+                </div>
+
+                <div class="dash-row">
+                    <div class="dash-panel">
+                        <h3>Upcoming Tasks</h3>
+                        <div id="upcomingTasksList" class="upcoming-list">
+                            <p class="empty-state">No upcoming tasks</p>
+                        </div>
+                    </div>
+                    <div class="dash-panel">
+                        <h3>Recent Activity</h3>
+                        <div id="recentActivityList" class="upcoming-list">
+                            <p class="empty-state">No recent activity</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dash-panel">
+                    <h3>Budget Breakdown by Category</h3>
+                    <div id="dashBudgetBreakdown" class="category-breakdown">
+                        <p class="empty-state">Add budget items to see breakdown</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Budget Tab -->
+            <div id="budgetTab" class="tab-content">
+                <div class="tab-header">
+                    <h2>Budget Tracker</h2>
+                    <div class="tab-actions">
+                        <button id="addBudgetCategoryBtn" class="btn btn-secondary">+ Category</button>
+                        <button id="addBudgetItemBtn" class="btn btn-primary">+ Add Item</button>
+                    </div>
+                </div>
+
+                <div class="budget-summary">
+                    <div class="summary-card">
+                        <div class="summary-label">Total Planned</div>
+                        <div class="summary-value" id="budgetTotalPlanned">$0</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-label">Total Actual</div>
+                        <div class="summary-value" id="budgetTotalActual">$0</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-label">Paid</div>
+                        <div class="summary-value success" id="budgetTotalPaid">$0</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-label">Outstanding</div>
+                        <div class="summary-value warning" id="budgetTotalOutstanding">$0</div>
+                    </div>
+                </div>
+
+                <div class="budget-progress-wrapper">
+                    <div class="budget-progress-label">
+                        <span>Spent vs Planned</span>
+                        <span id="budgetProgressText">0%</span>
+                    </div>
+                    <div class="budget-progress-track">
+                        <div class="budget-progress-fill" id="budgetProgressFill"></div>
+                    </div>
+                </div>
+
+                <div id="budgetCategoriesList" class="budget-categories">
+                    <p class="empty-state">No budget items yet. Click "+ Add Item" to start.</p>
+                </div>
+            </div>
+
+            <!-- Tasks Tab -->
+            <div id="tasksTab" class="tab-content">
+                <div class="tab-header">
+                    <h2>Tasks</h2>
+                    <div class="tab-actions">
+                        <div class="view-switcher">
+                            <button class="view-btn active" data-view="kanban">Kanban</button>
+                            <button class="view-btn" data-view="list">List</button>
+                            <button class="view-btn" data-view="calendar">Calendar</button>
+                        </div>
+                        <button id="addTaskBtn" class="btn btn-primary">+ Add Task</button>
+                    </div>
+                </div>
+
+                <div class="task-filters">
+                    <select id="taskFilterAssignee">
+                        <option value="">All Assignees</option>
+                    </select>
+                    <select id="taskFilterPriority">
+                        <option value="">All Priorities</option>
+                        <option value="high">High</option>
+                        <option value="medium">Medium</option>
+                        <option value="low">Low</option>
+                    </select>
+                    <select id="taskFilterCategory">
+                        <option value="">All Categories</option>
+                    </select>
+                    <input type="text" id="taskSearch" placeholder="Search tasks...">
+                </div>
+
+                <!-- Kanban view -->
+                <div id="tasksKanbanView" class="kanban-board">
+                    <div class="kanban-column" data-status="todo">
+                        <div class="kanban-header">
+                            <span class="kanban-title">To Do</span>
+                            <span class="kanban-count" id="kanbanCountTodo">0</span>
+                        </div>
+                        <div class="kanban-list" data-status="todo"></div>
+                    </div>
+                    <div class="kanban-column" data-status="doing">
+                        <div class="kanban-header">
+                            <span class="kanban-title">In Progress</span>
+                            <span class="kanban-count" id="kanbanCountDoing">0</span>
+                        </div>
+                        <div class="kanban-list" data-status="doing"></div>
+                    </div>
+                    <div class="kanban-column" data-status="review">
+                        <div class="kanban-header">
+                            <span class="kanban-title">Review</span>
+                            <span class="kanban-count" id="kanbanCountReview">0</span>
+                        </div>
+                        <div class="kanban-list" data-status="review"></div>
+                    </div>
+                    <div class="kanban-column" data-status="done">
+                        <div class="kanban-header">
+                            <span class="kanban-title">Done</span>
+                            <span class="kanban-count" id="kanbanCountDone">0</span>
+                        </div>
+                        <div class="kanban-list" data-status="done"></div>
+                    </div>
+                </div>
+
+                <!-- List view -->
+                <div id="tasksListView" class="tasks-list-view" style="display: none;">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Task</th>
+                                <th>Assignees</th>
+                                <th>Category</th>
+                                <th>Priority</th>
+                                <th>Due</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tasksListBody"></tbody>
+                    </table>
+                </div>
+
+                <!-- Calendar view -->
+                <div id="tasksCalendarView" class="tasks-calendar-view" style="display: none;">
+                    <div class="calendar-header">
+                        <button id="calPrevBtn" class="btn btn-ghost">&lt;</button>
+                        <h3 id="calMonthLabel">—</h3>
+                        <button id="calNextBtn" class="btn btn-ghost">&gt;</button>
+                    </div>
+                    <div id="calendarGrid" class="calendar-grid"></div>
+                </div>
+            </div>
+
+            <!-- Team Tab -->
+            <div id="teamTab" class="tab-content">
+                <div class="tab-header">
+                    <h2>Team & People</h2>
+                    <button id="addPersonBtn" class="btn btn-primary">+ Add Person</button>
+                </div>
+                <div id="teamGrid" class="team-grid">
+                    <p class="empty-state">No team members yet. Add people to assign them tasks and timeline events.</p>
+                </div>
+            </div>
+
+            <!-- Timeline Tab -->
+            <div id="timelineTab" class="tab-content">
+                <div class="tab-header">
+                    <h2>Day-Of Timeline</h2>
+                    <div class="tab-actions">
+                        <div class="view-switcher">
+                            <button class="view-btn active" data-timeline-view="swimlane">Swimlanes</button>
+                            <button class="view-btn" data-timeline-view="agenda">Agenda</button>
+                        </div>
+                        <button id="addTimelineEventBtn" class="btn btn-primary">+ Add Event</button>
+                    </div>
+                </div>
+
+                <div class="timeline-controls">
+                    <label>Zoom:
+                        <input type="range" id="timelineZoom" min="40" max="200" value="80">
+                    </label>
+                    <label>
+                        <input type="checkbox" id="showConnections" checked>
+                        Show connections between people
+                    </label>
+                    <label>
+                        <input type="checkbox" id="highlightOverlaps" checked>
+                        Highlight overlaps
+                    </label>
+                </div>
+
+                <div id="timelineSwimlaneView" class="timeline-swimlane-wrap">
+                    <div class="timeline-hours" id="timelineHours"></div>
+                    <div id="timelineSwimlanes" class="timeline-swimlanes">
+                        <p class="empty-state">Add people to the Team tab, then add timeline events here.</p>
+                    </div>
+                </div>
+
+                <div id="timelineAgendaView" class="timeline-agenda" style="display: none;">
+                    <p class="empty-state">No events yet</p>
+                </div>
+            </div>
+
+            <!-- Vendors Tab -->
+            <div id="vendorsTab" class="tab-content">
+                <div class="tab-header">
+                    <h2>Vendors</h2>
+                    <button id="addVendorBtn" class="btn btn-primary">+ Add Vendor</button>
+                </div>
+                <div id="vendorsList" class="vendors-grid">
+                    <p class="empty-state">No vendors yet</p>
+                </div>
+            </div>
+
+            <!-- Notes Tab -->
+            <div id="notesTab" class="tab-content">
+                <div class="tab-header">
+                    <h2>Notes & Ideas</h2>
+                    <button id="addNoteBtn" class="btn btn-primary">+ Add Note</button>
+                </div>
+                <div id="notesBoard" class="notes-board">
+                    <p class="empty-state">No notes yet. Jot down ideas, inspirations, or reminders.</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- ── Modals ──────────────────────────────────────────── -->
+
+    <!-- Budget Item Modal -->
+    <div id="budgetModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="budgetModalTitle">Add Budget Item</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="budgetItemId">
+                <div class="form-group">
+                    <label>Item Name *</label>
+                    <input type="text" id="budgetItemName" required>
+                </div>
+                <div class="form-group">
+                    <label>Category</label>
+                    <input type="text" id="budgetItemCategory" list="budgetCategoriesDatalist" placeholder="e.g., Venue, Food, Attire">
+                    <datalist id="budgetCategoriesDatalist"></datalist>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Planned ($)</label>
+                        <input type="number" id="budgetItemPlanned" step="0.01" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Actual ($)</label>
+                        <input type="number" id="budgetItemActual" step="0.01" min="0">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Status</label>
+                    <select id="budgetItemStatus">
+                        <option value="planned">Planned</option>
+                        <option value="deposit">Deposit Paid</option>
+                        <option value="paid">Paid in Full</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Vendor</label>
+                    <select id="budgetItemVendor">
+                        <option value="">— None —</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Notes</label>
+                    <textarea id="budgetItemNotes" rows="2"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-danger" id="deleteBudgetBtn" style="display: none;">Delete</button>
+                <button class="btn btn-secondary modal-cancel">Cancel</button>
+                <button class="btn btn-primary" id="saveBudgetBtn">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Task Modal -->
+    <div id="taskModal" class="modal">
+        <div class="modal-content modal-lg">
+            <div class="modal-header">
+                <h3 id="taskModalTitle">Add Task</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="taskId">
+                <div class="form-group">
+                    <label>Task Title *</label>
+                    <input type="text" id="taskTitle" required>
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea id="taskDescription" rows="3"></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Category</label>
+                        <input type="text" id="taskCategory" list="taskCategoriesDatalist" placeholder="e.g., Venue, Attire">
+                        <datalist id="taskCategoriesDatalist"></datalist>
+                    </div>
+                    <div class="form-group">
+                        <label>Priority</label>
+                        <select id="taskPriority">
+                            <option value="low">Low</option>
+                            <option value="medium" selected>Medium</option>
+                            <option value="high">High</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Due Date</label>
+                        <input type="date" id="taskDueDate">
+                    </div>
+                    <div class="form-group">
+                        <label>Status</label>
+                        <select id="taskStatus">
+                            <option value="todo">To Do</option>
+                            <option value="doing">In Progress</option>
+                            <option value="review">Review</option>
+                            <option value="done">Done</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Assignees</label>
+                    <div id="taskAssigneesList" class="assignees-chips"></div>
+                </div>
+                <div class="form-group">
+                    <label>Depends On (must finish first)</label>
+                    <select id="taskDependencies" multiple></select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-danger" id="deleteTaskBtn" style="display: none;">Delete</button>
+                <button class="btn btn-secondary modal-cancel">Cancel</button>
+                <button class="btn btn-primary" id="saveTaskBtn">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Person Modal -->
+    <div id="personModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="personModalTitle">Add Person</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="personId">
+                <div class="form-group">
+                    <label>Name *</label>
+                    <input type="text" id="personName" required>
+                </div>
+                <div class="form-group">
+                    <label>Role</label>
+                    <input type="text" id="personRole" placeholder="e.g., Maid of Honor, Coordinator, Photographer">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Phone</label>
+                        <input type="tel" id="personPhone">
+                    </div>
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" id="personEmail">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Timeline Color</label>
+                    <div id="personColorPicker" class="color-picker"></div>
+                </div>
+                <div class="form-group">
+                    <label>Notes</label>
+                    <textarea id="personNotes" rows="2"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-danger" id="deletePersonBtn" style="display: none;">Delete</button>
+                <button class="btn btn-secondary modal-cancel">Cancel</button>
+                <button class="btn btn-primary" id="savePersonBtn">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Timeline Event Modal -->
+    <div id="timelineModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="timelineModalTitle">Add Timeline Event</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="timelineEventId">
+                <div class="form-group">
+                    <label>Event Title *</label>
+                    <input type="text" id="timelineEventTitle" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Start Time *</label>
+                        <input type="time" id="timelineStart" required>
+                    </div>
+                    <div class="form-group">
+                        <label>End Time *</label>
+                        <input type="time" id="timelineEnd" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Location</label>
+                    <input type="text" id="timelineLocation">
+                </div>
+                <div class="form-group">
+                    <label>People Involved</label>
+                    <div id="timelinePeopleList" class="assignees-chips"></div>
+                </div>
+                <div class="form-group">
+                    <label>Connected To</label>
+                    <select id="timelineConnectedTo">
+                        <option value="">— None —</option>
+                    </select>
+                    <small>Link to a preceding event (e.g., photographer arrives after makeup finishes)</small>
+                </div>
+                <div class="form-group">
+                    <label>Notes</label>
+                    <textarea id="timelineNotes" rows="2"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-danger" id="deleteTimelineBtn" style="display: none;">Delete</button>
+                <button class="btn btn-secondary modal-cancel">Cancel</button>
+                <button class="btn btn-primary" id="saveTimelineBtn">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Vendor Modal -->
+    <div id="vendorModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="vendorModalTitle">Add Vendor</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="vendorId">
+                <div class="form-group">
+                    <label>Vendor Name *</label>
+                    <input type="text" id="vendorName" required>
+                </div>
+                <div class="form-group">
+                    <label>Category</label>
+                    <input type="text" id="vendorCategory" placeholder="e.g., Photographer, Florist, Venue">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Phone</label>
+                        <input type="tel" id="vendorPhone">
+                    </div>
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" id="vendorEmail">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Website</label>
+                    <input type="url" id="vendorWebsite" placeholder="https://">
+                </div>
+                <div class="form-group">
+                    <label>Contact Person</label>
+                    <input type="text" id="vendorContact">
+                </div>
+                <div class="form-group">
+                    <label>Status</label>
+                    <select id="vendorStatus">
+                        <option value="researching">Researching</option>
+                        <option value="contacted">Contacted</option>
+                        <option value="booked">Booked</option>
+                        <option value="declined">Declined</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Notes</label>
+                    <textarea id="vendorNotes" rows="3"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-danger" id="deleteVendorBtn" style="display: none;">Delete</button>
+                <button class="btn btn-secondary modal-cancel">Cancel</button>
+                <button class="btn btn-primary" id="saveVendorBtn">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Note Modal -->
+    <div id="noteModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="noteModalTitle">Add Note</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="noteId">
+                <div class="form-group">
+                    <label>Title</label>
+                    <input type="text" id="noteTitle">
+                </div>
+                <div class="form-group">
+                    <label>Content</label>
+                    <textarea id="noteContent" rows="5"></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Color</label>
+                        <select id="noteColor">
+                            <option value="yellow">Yellow</option>
+                            <option value="pink">Pink</option>
+                            <option value="blue">Blue</option>
+                            <option value="green">Green</option>
+                            <option value="purple">Purple</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="notePinned"> Pin to top
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-danger" id="deleteNoteBtn" style="display: none;">Delete</button>
+                <button class="btn btn-secondary modal-cancel">Cancel</button>
+                <button class="btn btn-primary" id="saveNoteBtn">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="eventplan.js"></script>
+</body>
+</html>
