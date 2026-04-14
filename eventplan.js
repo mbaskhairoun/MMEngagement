@@ -758,15 +758,21 @@ function renderTaskCalendar() {
     }
 
     // Current month
+    const MAX_TASKS_VISIBLE = 3;
     for (let d = 1; d <= daysInMonth; d++) {
         const dateObj = new Date(year, month, d);
         const iso = dateObj.toISOString().split('T')[0];
         const dayTasks = tasks.filter(t => t.dueDate === iso);
         const isToday = dateObj.toDateString() === today.toDateString();
+        const visibleTasks = dayTasks.slice(0, MAX_TASKS_VISIBLE);
+        const hiddenCount = dayTasks.length - visibleTasks.length;
         html += `
             <div class="calendar-day ${isToday ? 'today' : ''}">
                 <div class="calendar-day-num">${d}</div>
-                ${dayTasks.map(t => `<div class="calendar-task" data-id="${t.id}" title="${escapeHtml(t.title)}">${escapeHtml(t.title)}</div>`).join('')}
+                <div class="calendar-day-tasks">
+                    ${visibleTasks.map(t => `<div class="calendar-task" data-id="${t.id}" title="${escapeHtml(t.title)}">${escapeHtml(t.title)}</div>`).join('')}
+                    ${hiddenCount > 0 ? `<div class="calendar-task-more">+${hiddenCount} more</div>` : ''}
+                </div>
             </div>
         `;
     }
@@ -1035,9 +1041,9 @@ function renderTimelineSwimlane() {
         return;
     }
 
-    // Determine span (8 AM to 11 PM default, or compress to fit events)
+    // Default span: 8 AM to midnight. Expand if events fall outside.
     let startMin = 8 * 60;
-    let endMin = 23 * 60;
+    let endMin = 24 * 60;
     allTimelineEvents.forEach(e => {
         const s = timeToMinutes(e.start);
         const en = timeToMinutes(e.end);
@@ -1049,17 +1055,27 @@ function renderTimelineSwimlane() {
 
     const hourWidth = parseInt(document.getElementById('timelineZoom').value);
     const totalWidth = hours * hourWidth;
+    const LABEL_WIDTH = 180;
+    const innerWidth = LABEL_WIDTH + totalWidth;
 
     document.documentElement.style.setProperty('--hour-width', hourWidth + 'px');
 
-    // Hour headers
-    let hoursHtml = '';
+    // Force inner wrapper to the full width so horizontal scroll covers it all
+    const innerEl = document.querySelector('.timeline-swimlane-inner');
+    if (innerEl) innerEl.style.width = innerWidth + 'px';
+
+    // Hour headers — render label spacer + slots so flex math is explicit
+    let hoursHtml = `<div style="width:${LABEL_WIDTH}px;flex-shrink:0"></div>`;
     for (let h = 0; h < hours; h++) {
         const m = startMin + h * 60;
-        hoursHtml += `<div class="timeline-hour" style="width:${hourWidth}px">${minutesToLabel(m)}</div>`;
+        hoursHtml += `<div class="timeline-hour" style="width:${hourWidth}px;flex-shrink:0">${minutesToLabel(m)}</div>`;
     }
-    document.getElementById('timelineHours').innerHTML = hoursHtml;
-    document.getElementById('timelineHours').style.width = (180 + totalWidth) + 'px';
+    // Final endpoint label (e.g. 12:00 AM)
+    hoursHtml += `<div class="timeline-hour" style="width:0;flex-shrink:0;padding:0;position:relative"><span style="position:absolute;right:4px;top:50%;transform:translate(50%,-50%);white-space:nowrap">${minutesToLabel(endMin % 1440)}</span></div>`;
+    const hoursEl = document.getElementById('timelineHours');
+    hoursEl.innerHTML = hoursHtml;
+    hoursEl.style.width = innerWidth + 'px';
+    hoursEl.style.paddingLeft = '0'; // replaced by spacer div above
 
     // Build overlaps detection per person
     const eventsByPerson = {};
@@ -1090,31 +1106,34 @@ function renderTimelineSwimlane() {
 
     // Render swimlanes
     const swimlanesEl = document.getElementById('timelineSwimlanes');
+    swimlanesEl.style.width = innerWidth + 'px';
     swimlanesEl.innerHTML = allPeople.map(p => {
         const events = eventsByPerson[p.id] || [];
         const eventsHtml = events.map(e => {
             const es = timeToMinutes(e.start);
             const ee = timeToMinutes(e.end);
             const left = ((es - startMin) / 60) * hourWidth;
-            const width = Math.max(60, ((ee - es) / 60) * hourWidth);
+            const naturalWidth = ((ee - es) / 60) * hourWidth;
+            const width = Math.max(60, naturalWidth);
             const isOverlap = overlappingIds.has(e.id);
+            const tooltip = `${escapeHtml(e.title)}\n${minutesToLabel(es)} – ${minutesToLabel(ee)}${e.location ? '\n' + escapeHtml(e.location) : ''}`;
             return `
-                <div class="timeline-event ${isOverlap ? 'overlap-highlight' : ''}" data-id="${e.id}" style="left:${left}px;width:${width}px;background:${p.color}">
+                <div class="timeline-event ${isOverlap ? 'overlap-highlight' : ''}" data-id="${e.id}" style="left:${left}px;width:${width}px;background:${p.color}" title="${tooltip}">
                     <div class="timeline-event-title">${escapeHtml(e.title)}</div>
                     <div class="timeline-event-time">${minutesToLabel(es)} – ${minutesToLabel(ee)}${e.location ? ' · ' + escapeHtml(e.location) : ''}</div>
                 </div>
             `;
         }).join('');
         return `
-            <div class="swimlane" data-person="${p.id}">
-                <div class="swimlane-label">
+            <div class="swimlane" data-person="${p.id}" style="width:${innerWidth}px">
+                <div class="swimlane-label" style="width:${LABEL_WIDTH}px;flex-shrink:0">
                     <div class="swimlane-avatar" style="background:${p.color}">${initialsOf(p.name)}</div>
                     <div>
                         <div class="swimlane-name">${escapeHtml(p.name)}</div>
                         <div class="swimlane-role">${escapeHtml(p.role || '')}</div>
                     </div>
                 </div>
-                <div class="swimlane-track" style="width:${totalWidth}px">${eventsHtml}</div>
+                <div class="swimlane-track" style="width:${totalWidth}px;flex-shrink:0">${eventsHtml}</div>
             </div>
         `;
     }).join('');
