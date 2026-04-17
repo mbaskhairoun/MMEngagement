@@ -329,6 +329,7 @@ function openBudgetModal(item) {
     document.getElementById('budgetItemPlanned').value = item?.planned || '';
     document.getElementById('budgetItemActual').value = item?.actual || '';
     document.getElementById('budgetItemStatus').value = item?.status || 'planned';
+    document.getElementById('budgetItemPaidBy').value = item?.paidBy || '';
     document.getElementById('budgetItemNotes').value = item?.notes || '';
 
     // Populate vendor dropdown
@@ -340,6 +341,14 @@ function openBudgetModal(item) {
     const cats = new Set(allBudgetItems.map(b => b.category).filter(Boolean));
     document.getElementById('budgetCategoriesDatalist').innerHTML =
         [...cats].map(c => `<option value="${escapeHtml(c)}">`).join('');
+
+    // Populate paid-by datalist from prior entries plus common defaults
+    const paidByOptions = new Set([
+        ...allBudgetItems.map(b => b.paidBy).filter(Boolean),
+        'Bride', 'Groom', "Bride's Parents", "Groom's Parents", 'Joint'
+    ]);
+    document.getElementById('budgetPaidByDatalist').innerHTML =
+        [...paidByOptions].map(p => `<option value="${escapeHtml(p)}">`).join('');
 
     document.getElementById('deleteBudgetBtn').style.display = isEdit ? 'inline-flex' : 'none';
     openModal('budgetModal');
@@ -354,9 +363,11 @@ async function saveBudgetItem() {
         actual: parseFloat(document.getElementById('budgetItemActual').value) || 0,
         status: document.getElementById('budgetItemStatus').value,
         vendorId: document.getElementById('budgetItemVendor').value || null,
+        paidBy: document.getElementById('budgetItemPaidBy').value.trim(),
         notes: document.getElementById('budgetItemNotes').value.trim() || null
     };
     if (!data.name) { alert('Please enter a name'); return; }
+    if (!data.paidBy) { alert('Please indicate who paid for this expense'); return; }
 
     try {
         await saveDoc('eventPlan_budget', id, data);
@@ -430,6 +441,7 @@ function renderBudget() {
                                 <div class="budget-item-name">
                                     ${escapeHtml(item.name)}
                                     ${vendor ? `<small>${escapeHtml(vendor.name)}</small>` : ''}
+                                    ${item.paidBy ? `<small>Paid by: ${escapeHtml(item.paidBy)}</small>` : ''}
                                 </div>
                                 <div class="budget-item-amount">${formatMoney(item.planned)}</div>
                                 <div class="budget-item-amount actual">${formatMoney(item.actual)}</div>
