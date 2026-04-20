@@ -532,6 +532,27 @@ function filteredTasks() {
 
 function isTaskDone(t) { return t.status === 'done'; }
 
+function assignmentSectionsHtml(tasks) {
+    const open = tasks.filter(t => !isTaskDone(t));
+    const done = tasks.filter(t => isTaskDone(t));
+    const assigned = open.filter(t => (t.assignees || []).length > 0);
+    const unassigned = open.filter(t => (t.assignees || []).length === 0);
+
+    const sectionHtml = (label, items, cls) => {
+        if (items.length === 0) return '';
+        return `
+            <div class="checklist-section ${cls}">
+                <h4 class="checklist-section-title">${label} <span class="checklist-count">${items.length}</span></h4>
+                <div class="checklist-items">${items.map(taskRowHtml).join('')}</div>
+            </div>
+        `;
+    };
+
+    return sectionHtml('Assigned', assigned, 'assigned-section') +
+           sectionHtml('Unassigned', unassigned, 'unassigned-section') +
+           sectionHtml('Completed', done, 'completed-section');
+}
+
 function renderTasks() {
     populateFilterDropdowns();
     const container = document.getElementById('tasksChecklist');
@@ -542,22 +563,33 @@ function renderTasks() {
         return;
     }
 
-    const open = tasks.filter(t => !isTaskDone(t));
-    const done = tasks.filter(t => isTaskDone(t));
+    const isAllTeams = !taskFilterState.team;
 
-    const sectionHtml = (label, items) => {
-        if (items.length === 0) return '';
-        return `
-            <div class="checklist-section">
-                <h3 class="checklist-section-title">${label} <span class="checklist-count">${items.length}</span></h3>
-                <div class="checklist-items">
-                    ${items.map(taskRowHtml).join('')}
-                </div>
+    if (isAllTeams) {
+        const byTeam = new Map();
+        tasks.forEach(t => {
+            const key = t.teamId || '__none__';
+            if (!byTeam.has(key)) byTeam.set(key, []);
+            byTeam.get(key).push(t);
+        });
+
+        const sections = [];
+        allTeams.forEach(team => {
+            const items = byTeam.get(team.id);
+            if (items && items.length > 0) sections.push({ label: team.name, items });
+        });
+        const noTeam = byTeam.get('__none__');
+        if (noTeam && noTeam.length > 0) sections.push({ label: 'No Team', items: noTeam });
+
+        container.innerHTML = sections.map(s => `
+            <div class="team-group">
+                <h3 class="team-group-title">${escapeHtml(s.label)} <span class="team-group-count">${s.items.length}</span></h3>
+                ${assignmentSectionsHtml(s.items)}
             </div>
-        `;
-    };
-
-    container.innerHTML = sectionHtml('Open', open) + sectionHtml('Completed', done);
+        `).join('');
+    } else {
+        container.innerHTML = assignmentSectionsHtml(tasks);
+    }
 
     container.querySelectorAll('.checklist-item').forEach(el => {
         const checkbox = el.querySelector('.checklist-checkbox');

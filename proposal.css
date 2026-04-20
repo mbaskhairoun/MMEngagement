@@ -388,3 +388,65 @@
         padding-left: 28px;
     }
 }
+
+/* Team grouping in tasks tab */
+.team-group {
+    padding: 1.25rem;
+    background: var(--cream-light, #F8F4EA);
+    border: 1px solid var(--cream-dark, #E8E1D3);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.team-group-title {
+    margin: 0;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.35rem;
+    font-weight: 600;
+    color: var(--black, #1a1a1a);
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--cream-dark, #E8E1D3);
+}
+
+.team-group-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 26px;
+    height: 22px;
+    padding: 0 0.5rem;
+    background: var(--white, #fff);
+    border: 1px solid var(--cream-dark, #E8E1D3);
+    border-radius: 11px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--gray, #6B6B6B);
+    font-family: 'Montserrat', sans-serif;
+}
+
+/* Section accent colors */
+.checklist-section.assigned-section .checklist-section-title {
+    color: #2E7D5C;
+}
+
+.checklist-section.unassigned-section .checklist-section-title {
+    color: #C53030;
+}
+
+.checklist-section.unassigned-section .checklist-item {
+    border-left: 3px solid #C53030;
+    background: #FFF5F5;
+}
+
+.checklist-section.unassigned-section .checklist-item:hover {
+    background: #FFECEC;
+}
+
+.checklist-section.completed-section .checklist-section-title {
+    color: var(--gray, #6B6B6B);
+}
