@@ -886,7 +886,14 @@ function renderColorPicker() {
 
     const customInput = document.getElementById('personCustomColor');
     if (customInput) {
+        // Live preview on the custom swatch without rebuilding the DOM
+        // (rebuilding would close the OS color picker mid-interaction)
         customInput.addEventListener('input', (e) => {
+            const swatch = customInput.closest('.color-swatch-custom');
+            if (swatch) swatch.style.background = e.target.value;
+        });
+        // Commit + re-render only after the picker is dismissed
+        customInput.addEventListener('change', (e) => {
             editingPersonColor = e.target.value;
             renderColorPicker();
         });
