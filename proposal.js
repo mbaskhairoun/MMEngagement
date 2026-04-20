@@ -19,11 +19,9 @@ let allTimelineEvents = [];
 let allVendors = [];
 let allNotes = [];
 
-let taskView = 'kanban';
 let timelineView = 'swimlane';
-let currentCalDate = new Date();
 
-let taskFilterState = { team: '', assignee: '', priority: '', category: '', search: '' };
+let taskFilterState = { team: '', assignee: '', category: '', search: '' };
 let editingAssignees = [];
 let editingTimelinePeople = [];
 let editingTeamHelpers = [];
@@ -487,19 +485,7 @@ function initTaskHandlers() {
     document.getElementById('saveTaskBtn').addEventListener('click', saveTask);
     document.getElementById('deleteTaskBtn').addEventListener('click', deleteTask);
 
-    document.querySelectorAll('[data-view]').forEach(btn => {
-        btn.addEventListener('click', () => {
-            document.querySelectorAll('[data-view]').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            taskView = btn.dataset.view;
-            document.getElementById('tasksKanbanView').style.display = taskView === 'kanban' ? 'grid' : 'none';
-            document.getElementById('tasksListView').style.display = taskView === 'list' ? 'block' : 'none';
-            document.getElementById('tasksCalendarView').style.display = taskView === 'calendar' ? 'block' : 'none';
-            renderTasks();
-        });
-    });
-
-    ['taskFilterTeam', 'taskFilterAssignee', 'taskFilterPriority', 'taskFilterCategory'].forEach(id => {
+    ['taskFilterTeam', 'taskFilterAssignee', 'taskFilterCategory'].forEach(id => {
         document.getElementById(id).addEventListener('change', (e) => {
             const key = id.replace('taskFilter', '').toLowerCase();
             taskFilterState[key] = e.target.value;
@@ -508,15 +494,6 @@ function initTaskHandlers() {
     });
     document.getElementById('taskSearch').addEventListener('input', (e) => {
         taskFilterState.search = e.target.value.toLowerCase();
-        renderTasks();
-    });
-
-    document.getElementById('calPrevBtn').addEventListener('click', () => {
-        currentCalDate.setMonth(currentCalDate.getMonth() - 1);
-        renderTasks();
-    });
-    document.getElementById('calNextBtn').addEventListener('click', () => {
-        currentCalDate.setMonth(currentCalDate.getMonth() + 1);
         renderTasks();
     });
 }
@@ -543,7 +520,6 @@ function filteredTasks() {
     return allTasks.filter(t => {
         if (taskFilterState.team && t.teamId !== taskFilterState.team) return false;
         if (taskFilterState.assignee && !(t.assignees || []).includes(taskFilterState.assignee)) return false;
-        if (taskFilterState.priority && t.priority !== taskFilterState.priority) return false;
         if (taskFilterState.category && t.category !== taskFilterState.category) return false;
         if (taskFilterState.search) {
             const s = taskFilterState.search;
@@ -554,187 +530,100 @@ function filteredTasks() {
     });
 }
 
+function isTaskDone(t) { return t.status === 'done'; }
+
 function renderTasks() {
     populateFilterDropdowns();
-    if (taskView === 'kanban') renderKanban();
-    else if (taskView === 'list') renderTaskList();
-    else renderTaskCalendar();
-}
-
-function renderKanban() {
+    const container = document.getElementById('tasksChecklist');
     const tasks = filteredTasks();
-    const statuses = ['todo', 'doing', 'review', 'done'];
 
-    statuses.forEach(status => {
-        const list = document.querySelector(`.kanban-list[data-status="${status}"]`);
-        const items = tasks.filter(t => (t.status || 'todo') === status);
-        document.getElementById('kanbanCount' + status.charAt(0).toUpperCase() + status.slice(1)).textContent = items.length;
+    if (tasks.length === 0) {
+        container.innerHTML = '<p class="empty-state">No tasks yet. Click "+ Add Task" to start.</p>';
+        return;
+    }
 
-        list.innerHTML = items.map(taskCardHtml).join('') ||
-            '<div class="empty-state" style="padding:1rem;font-size:.8rem">Drop tasks here</div>';
+    const open = tasks.filter(t => !isTaskDone(t));
+    const done = tasks.filter(t => isTaskDone(t));
 
-        list.querySelectorAll('.task-card').forEach(card => {
-            card.addEventListener('click', () => {
-                const task = getTaskById(card.dataset.id);
-                if (task) openTaskModal(task);
-            });
-            card.addEventListener('dragstart', (e) => {
-                e.dataTransfer.setData('text/plain', card.dataset.id);
-                card.classList.add('dragging');
-            });
-            card.addEventListener('dragend', () => card.classList.remove('dragging'));
-        });
-    });
+    const sectionHtml = (label, items) => {
+        if (items.length === 0) return '';
+        return `
+            <div class="checklist-section">
+                <h3 class="checklist-section-title">${label} <span class="checklist-count">${items.length}</span></h3>
+                <div class="checklist-items">
+                    ${items.map(taskRowHtml).join('')}
+                </div>
+            </div>
+        `;
+    };
 
-    document.querySelectorAll('.kanban-column').forEach(col => {
-        col.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            col.classList.add('drag-over');
-        });
-        col.addEventListener('dragleave', () => col.classList.remove('drag-over'));
-        col.addEventListener('drop', async (e) => {
-            e.preventDefault();
-            col.classList.remove('drag-over');
-            const taskId = e.dataTransfer.getData('text/plain');
-            const newStatus = col.dataset.status;
-            const task = getTaskById(taskId);
-            if (task && task.status !== newStatus) {
-                task.status = newStatus;
+    container.innerHTML = sectionHtml('Open', open) + sectionHtml('Completed', done);
+
+    container.querySelectorAll('.checklist-item').forEach(el => {
+        const checkbox = el.querySelector('.checklist-checkbox');
+        checkbox.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const id = el.dataset.id;
+            const task = getTaskById(id);
+            if (!task) return;
+            const newStatus = isTaskDone(task) ? 'todo' : 'done';
+            task.status = newStatus;
+            try {
                 await window.firebaseUpdateDoc(
-                    window.firebaseDoc(window.firebaseDb, 'proposal_tasks', taskId),
+                    window.firebaseDoc(window.firebaseDb, 'proposal_tasks', id),
                     { status: newStatus }
                 );
                 renderTasks();
                 renderDashboard();
+            } catch (err) {
+                alert('Error updating: ' + err.message);
             }
+        });
+        el.addEventListener('click', () => {
+            const task = getTaskById(el.dataset.id);
+            if (task) openTaskModal(task);
         });
     });
 }
 
-function taskCardHtml(t) {
+function taskRowHtml(t) {
     const assignees = (t.assignees || []).map(id => {
         const p = getPersonById(id);
         if (!p) return '';
         return `<span class="assignee-avatar" title="${escapeHtml(p.name)}" style="background:${p.color}">${initialsOf(p.name)}</span>`;
     }).join('');
 
-    const now = new Date(); now.setHours(0, 0, 0, 0);
+    const team = getTeamById(t.teamId);
+    const teamHtml = team ? `<span class="task-team-tag">${escapeHtml(team.name)}</span>` : '';
+
     let dueHtml = '';
     if (t.dueDate) {
+        const now = new Date(); now.setHours(0, 0, 0, 0);
         const due = new Date(t.dueDate);
         const days = daysBetween(now, due);
         let cls = '';
-        let label = due.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-        if (t.status !== 'done') {
+        const label = due.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+        if (!isTaskDone(t)) {
             if (days < 0) cls = 'overdue';
             else if (days <= 3) cls = 'soon';
         }
         dueHtml = `<span class="task-due ${cls}">${label}</span>`;
     }
 
-    const team = getTeamById(t.teamId);
-    const teamHtml = team ? `<span class="task-team-tag">${escapeHtml(team.name)}</span>` : '';
-
+    const done = isTaskDone(t);
     return `
-        <div class="task-card priority-${t.priority || 'medium'}" data-id="${t.id}" draggable="true">
-            <div class="task-card-title">${escapeHtml(t.title)}</div>
-            ${t.description ? `<div class="task-card-desc">${escapeHtml(t.description.slice(0, 80))}${t.description.length > 80 ? '…' : ''}</div>` : ''}
-            <div class="task-card-meta">
-                <div class="task-card-assignees">${assignees}</div>
-                <div style="display:flex;gap:.4rem;align-items:center;flex-wrap:wrap">${teamHtml}${dueHtml}</div>
+        <div class="checklist-item ${done ? 'done' : ''}" data-id="${t.id}">
+            <button class="checklist-checkbox ${done ? 'checked' : ''}" aria-label="${done ? 'Mark as not done' : 'Mark as done'}"></button>
+            <div class="checklist-main">
+                <div class="checklist-title">${escapeHtml(t.title)}</div>
+                ${t.description ? `<div class="checklist-desc">${escapeHtml(t.description.slice(0, 120))}${t.description.length > 120 ? '…' : ''}</div>` : ''}
+            </div>
+            <div class="checklist-meta">
+                <div class="checklist-assignees">${assignees || '<span class="unassigned">Unassigned</span>'}</div>
+                <div class="checklist-tags">${teamHtml}${dueHtml}</div>
             </div>
         </div>
     `;
-}
-
-function renderTaskList() {
-    const tasks = filteredTasks();
-    const tbody = document.getElementById('tasksListBody');
-    if (tasks.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" class="empty-state">No tasks</td></tr>';
-        return;
-    }
-    tbody.innerHTML = tasks.map(t => {
-        const assignees = (t.assignees || []).map(id => {
-            const p = getPersonById(id);
-            return p ? `<span class="assignee-avatar" style="background:${p.color}">${initialsOf(p.name)}</span>` : '';
-        }).join('');
-        const team = getTeamById(t.teamId);
-        return `
-            <tr data-id="${t.id}" style="cursor:pointer">
-                <td><strong>${escapeHtml(t.title)}</strong>${team ? `<br><small style="color:#9A9A9A">${escapeHtml(team.name)}</small>` : ''}</td>
-                <td><div class="task-card-assignees">${assignees}</div></td>
-                <td>${escapeHtml(t.category || '—')}</td>
-                <td><span class="badge badge-${t.priority || 'medium'}">${t.priority || 'medium'}</span></td>
-                <td>${t.dueDate ? new Date(t.dueDate).toLocaleDateString() : '—'}</td>
-                <td>${t.status || 'todo'}</td>
-                <td><button class="btn btn-secondary btn-sm">Edit</button></td>
-            </tr>
-        `;
-    }).join('');
-    tbody.querySelectorAll('tr').forEach(tr => {
-        tr.addEventListener('click', () => {
-            const task = getTaskById(tr.dataset.id);
-            if (task) openTaskModal(task);
-        });
-    });
-}
-
-function renderTaskCalendar() {
-    const year = currentCalDate.getFullYear();
-    const month = currentCalDate.getMonth();
-    document.getElementById('calMonthLabel').textContent =
-        currentCalDate.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
-
-    const first = new Date(year, month, 1);
-    const startDay = first.getDay();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const daysInPrev = new Date(year, month, 0).getDate();
-
-    const grid = document.getElementById('calendarGrid');
-    let html = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-        .map(d => `<div class="calendar-day-header">${d}</div>`).join('');
-
-    const today = new Date();
-    const tasks = filteredTasks().filter(t => t.dueDate);
-
-    for (let i = startDay - 1; i >= 0; i--) {
-        html += `<div class="calendar-day other-month"><div class="calendar-day-num">${daysInPrev - i}</div></div>`;
-    }
-
-    const MAX_TASKS_VISIBLE = 3;
-    for (let d = 1; d <= daysInMonth; d++) {
-        const dateObj = new Date(year, month, d);
-        const iso = dateObj.toISOString().split('T')[0];
-        const dayTasks = tasks.filter(t => t.dueDate === iso);
-        const isToday = dateObj.toDateString() === today.toDateString();
-        const visibleTasks = dayTasks.slice(0, MAX_TASKS_VISIBLE);
-        const hiddenCount = dayTasks.length - visibleTasks.length;
-        html += `
-            <div class="calendar-day ${isToday ? 'today' : ''}">
-                <div class="calendar-day-num">${d}</div>
-                <div class="calendar-day-tasks">
-                    ${visibleTasks.map(t => `<div class="calendar-task" data-id="${t.id}" title="${escapeHtml(t.title)}">${escapeHtml(t.title)}</div>`).join('')}
-                    ${hiddenCount > 0 ? `<div class="calendar-task-more">+${hiddenCount} more</div>` : ''}
-                </div>
-            </div>
-        `;
-    }
-
-    const totalCells = startDay + daysInMonth;
-    const trailing = (7 - (totalCells % 7)) % 7;
-    for (let d = 1; d <= trailing; d++) {
-        html += `<div class="calendar-day other-month"><div class="calendar-day-num">${d}</div></div>`;
-    }
-
-    grid.innerHTML = html;
-    grid.querySelectorAll('.calendar-task').forEach(el => {
-        el.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const t = getTaskById(el.dataset.id);
-            if (t) openTaskModal(t);
-        });
-    });
 }
 
 function openTaskModal(task, prefill) {
@@ -746,7 +635,7 @@ function openTaskModal(task, prefill) {
     document.getElementById('taskCategory').value = task?.category || '';
     document.getElementById('taskPriority').value = task?.priority || 'medium';
     document.getElementById('taskDueDate').value = task?.dueDate || '';
-    document.getElementById('taskStatus').value = task?.status || 'todo';
+    document.getElementById('taskDone').checked = isTaskDone(task || {});
 
     const teamSel = document.getElementById('taskTeam');
     const currentTeamId = task?.teamId || prefill?.teamId || '';
@@ -755,12 +644,6 @@ function openTaskModal(task, prefill) {
 
     editingAssignees = task?.assignees ? [...task.assignees] : [];
     renderAssigneesChips('taskAssigneesList', editingAssignees, (arr) => editingAssignees = arr);
-
-    const depSel = document.getElementById('taskDependencies');
-    depSel.innerHTML = allTasks
-        .filter(t => t.id !== task?.id)
-        .map(t => `<option value="${t.id}" ${(task?.dependencies || []).includes(t.id) ? 'selected' : ''}>${escapeHtml(t.title)}</option>`)
-        .join('');
 
     const cats = new Set(allTasks.map(t => t.category).filter(Boolean));
     document.getElementById('taskCategoriesDatalist').innerHTML =
@@ -799,17 +682,15 @@ function renderAssigneesChips(containerId, selected, onChange) {
 
 async function saveTask() {
     const id = document.getElementById('taskId').value;
-    const dependencies = [...document.getElementById('taskDependencies').selectedOptions].map(o => o.value);
     const data = {
         title: document.getElementById('taskTitle').value.trim(),
         description: document.getElementById('taskDescription').value.trim() || null,
         category: document.getElementById('taskCategory').value.trim() || null,
         priority: document.getElementById('taskPriority').value,
         dueDate: document.getElementById('taskDueDate').value || null,
-        status: document.getElementById('taskStatus').value,
+        status: document.getElementById('taskDone').checked ? 'done' : 'todo',
         teamId: document.getElementById('taskTeam').value || null,
-        assignees: [...editingAssignees],
-        dependencies: dependencies
+        assignees: [...editingAssignees]
     };
     if (!data.title) { alert('Please enter a title'); return; }
 

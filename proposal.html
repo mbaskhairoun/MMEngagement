@@ -219,11 +219,6 @@
                 <div class="tab-header">
                     <h2>Tasks</h2>
                     <div class="tab-actions">
-                        <div class="view-switcher">
-                            <button class="view-btn active" data-view="kanban">Kanban</button>
-                            <button class="view-btn" data-view="list">List</button>
-                            <button class="view-btn" data-view="calendar">Calendar</button>
-                        </div>
                         <button id="addTaskBtn" class="btn btn-primary">+ Add Task</button>
                     </div>
                 </div>
@@ -235,76 +230,14 @@
                     <select id="taskFilterAssignee">
                         <option value="">All Assignees</option>
                     </select>
-                    <select id="taskFilterPriority">
-                        <option value="">All Priorities</option>
-                        <option value="high">High</option>
-                        <option value="medium">Medium</option>
-                        <option value="low">Low</option>
-                    </select>
                     <select id="taskFilterCategory">
                         <option value="">All Categories</option>
                     </select>
                     <input type="text" id="taskSearch" placeholder="Search tasks...">
                 </div>
 
-                <!-- Kanban view -->
-                <div id="tasksKanbanView" class="kanban-board">
-                    <div class="kanban-column" data-status="todo">
-                        <div class="kanban-header">
-                            <span class="kanban-title">To Do</span>
-                            <span class="kanban-count" id="kanbanCountTodo">0</span>
-                        </div>
-                        <div class="kanban-list" data-status="todo"></div>
-                    </div>
-                    <div class="kanban-column" data-status="doing">
-                        <div class="kanban-header">
-                            <span class="kanban-title">In Progress</span>
-                            <span class="kanban-count" id="kanbanCountDoing">0</span>
-                        </div>
-                        <div class="kanban-list" data-status="doing"></div>
-                    </div>
-                    <div class="kanban-column" data-status="review">
-                        <div class="kanban-header">
-                            <span class="kanban-title">Review</span>
-                            <span class="kanban-count" id="kanbanCountReview">0</span>
-                        </div>
-                        <div class="kanban-list" data-status="review"></div>
-                    </div>
-                    <div class="kanban-column" data-status="done">
-                        <div class="kanban-header">
-                            <span class="kanban-title">Done</span>
-                            <span class="kanban-count" id="kanbanCountDone">0</span>
-                        </div>
-                        <div class="kanban-list" data-status="done"></div>
-                    </div>
-                </div>
-
-                <!-- List view -->
-                <div id="tasksListView" class="tasks-list-view" style="display: none;">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Task</th>
-                                <th>Assignees</th>
-                                <th>Category</th>
-                                <th>Priority</th>
-                                <th>Due</th>
-                                <th>Status</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tasksListBody"></tbody>
-                    </table>
-                </div>
-
-                <!-- Calendar view -->
-                <div id="tasksCalendarView" class="tasks-calendar-view" style="display: none;">
-                    <div class="calendar-header">
-                        <button id="calPrevBtn" class="btn btn-ghost">&lt;</button>
-                        <h3 id="calMonthLabel">—</h3>
-                        <button id="calNextBtn" class="btn btn-ghost">&gt;</button>
-                    </div>
-                    <div id="calendarGrid" class="calendar-grid"></div>
+                <div id="tasksChecklist" class="tasks-checklist">
+                    <p class="empty-state">No tasks yet. Click "+ Add Task" to start.</p>
                 </div>
             </div>
 
@@ -504,21 +437,13 @@
                     </div>
                 </div>
                 <div class="form-group">
-                    <label>Status</label>
-                    <select id="taskStatus">
-                        <option value="todo">To Do</option>
-                        <option value="doing">In Progress</option>
-                        <option value="review">Review</option>
-                        <option value="done">Done</option>
-                    </select>
+                    <label>
+                        <input type="checkbox" id="taskDone"> Mark as done
+                    </label>
                 </div>
                 <div class="form-group">
                     <label>Assignees</label>
                     <div id="taskAssigneesList" class="assignees-chips"></div>
-                </div>
-                <div class="form-group">
-                    <label>Depends On (must finish first)</label>
-                    <select id="taskDependencies" multiple></select>
                 </div>
             </div>
             <div class="modal-footer">
