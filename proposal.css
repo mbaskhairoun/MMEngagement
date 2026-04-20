@@ -181,3 +181,47 @@
     padding: 0.35rem 0.7rem;
     font-size: 0.8rem;
 }
+
+/* Custom color wheel swatch in person modal */
+.color-swatch-custom {
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+    background: conic-gradient(from 0deg,
+        #ff0000, #ffaa00, #ffff00, #aaff00,
+        #00ff00, #00ffaa, #00ffff, #00aaff,
+        #0000ff, #aa00ff, #ff00ff, #ff00aa, #ff0000);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.color-swatch-custom::after {
+    content: '+';
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-weight: 700;
+    font-size: 1.1rem;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    pointer-events: none;
+}
+
+.color-swatch-custom.selected::after {
+    content: '';
+}
+
+.color-swatch-custom input[type="color"] {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+    border: none;
+    padding: 0;
+    background: transparent;
+}

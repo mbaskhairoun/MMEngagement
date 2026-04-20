@@ -862,15 +862,35 @@ function openPersonModal(person) {
 
 function renderColorPicker() {
     const picker = document.getElementById('personColorPicker');
-    picker.innerHTML = PERSON_COLORS.map(c => `
+    const isCustom = !PERSON_COLORS.includes(editingPersonColor);
+
+    const swatchesHtml = PERSON_COLORS.map(c => `
         <div class="color-swatch ${c === editingPersonColor ? 'selected' : ''}" data-color="${c}" style="background:${c}"></div>
     `).join('');
-    picker.querySelectorAll('.color-swatch').forEach(sw => {
+
+    const customStyle = isCustom ? `background:${escapeHtml(editingPersonColor)}` : '';
+    const customHtml = `
+        <label class="color-swatch color-swatch-custom ${isCustom ? 'selected' : ''}" title="Pick a custom color" style="${customStyle}">
+            <input type="color" id="personCustomColor" value="${escapeHtml(editingPersonColor)}">
+        </label>
+    `;
+
+    picker.innerHTML = swatchesHtml + customHtml;
+
+    picker.querySelectorAll('.color-swatch[data-color]').forEach(sw => {
         sw.addEventListener('click', () => {
             editingPersonColor = sw.dataset.color;
             renderColorPicker();
         });
     });
+
+    const customInput = document.getElementById('personCustomColor');
+    if (customInput) {
+        customInput.addEventListener('input', (e) => {
+            editingPersonColor = e.target.value;
+            renderColorPicker();
+        });
+    }
 }
 
 async function savePerson() {
