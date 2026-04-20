@@ -1,0 +1,183 @@
+/* Proposal Planning — additions on top of eventplan.css */
+
+/* Teams list and cards */
+.teams-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+    gap: 1.25rem;
+    margin-bottom: 1rem;
+}
+
+.team-card {
+    background: var(--white, #fff);
+    border: 1px solid var(--cream-dark, #E8E1D3);
+    border-radius: 12px;
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    transition: box-shadow 0.2s;
+}
+
+.team-card:hover { box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08); }
+
+.team-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.team-card-name {
+    margin: 0 0 0.25rem;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: var(--black, #1a1a1a);
+}
+
+.team-card-stats {
+    display: flex;
+    gap: 0.75rem;
+    font-size: 0.8rem;
+    color: var(--gray, #6B6B6B);
+}
+
+.team-card-stats span {
+    padding: 0.15rem 0.5rem;
+    background: var(--cream-light, #F8F4EA);
+    border-radius: 4px;
+}
+
+.team-card-actions {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+}
+
+.team-leader,
+.team-helper {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.team-leader:hover,
+.team-helper:hover {
+    background: var(--cream-light, #F8F4EA);
+}
+
+.team-leader {
+    background: linear-gradient(90deg, rgba(212, 175, 55, 0.12), transparent);
+    border-left: 3px solid #D4AF37;
+    padding-left: 0.75rem;
+}
+
+.team-leader-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #B8962E;
+    font-weight: 600;
+}
+
+.team-leader-name {
+    font-weight: 600;
+    font-size: 1rem;
+    color: var(--black, #1a1a1a);
+}
+
+.team-helpers-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.team-helpers-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--gray, #6B6B6B);
+    font-weight: 600;
+}
+
+.team-helpers-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.team-helper-name {
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+
+.team-helper-role {
+    font-size: 0.75rem;
+    color: var(--gray, #6B6B6B);
+}
+
+.team-notes {
+    font-size: 0.85rem;
+    color: var(--gray, #6B6B6B);
+    border-top: 1px dashed var(--cream-dark, #E8E1D3);
+    padding-top: 0.75rem;
+    line-height: 1.4;
+}
+
+/* Larger avatar variant */
+.assignee-avatar.lg {
+    width: 42px;
+    height: 42px;
+    font-size: 0.9rem;
+}
+
+/* Team chips on person cards */
+.person-teams {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    justify-content: center;
+    margin: 0.5rem 0;
+}
+
+.team-chip {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    background: var(--cream-light, #F8F4EA);
+    border: 1px solid var(--cream-dark, #E8E1D3);
+    border-radius: 10px;
+    font-size: 0.7rem;
+    color: var(--gray, #6B6B6B);
+}
+
+.team-chip.leader {
+    background: rgba(212, 175, 55, 0.15);
+    border-color: #D4AF37;
+    color: #8B6F1E;
+    font-weight: 600;
+}
+
+/* Team tag on task cards */
+.task-team-tag {
+    display: inline-block;
+    padding: 0.1rem 0.45rem;
+    background: rgba(37, 99, 235, 0.1);
+    border: 1px solid rgba(37, 99, 235, 0.25);
+    border-radius: 10px;
+    font-size: 0.7rem;
+    color: #1E40AF;
+    font-weight: 500;
+}
+
+/* Small button variant used in team cards */
+.btn-sm {
+    padding: 0.35rem 0.7rem;
+    font-size: 0.8rem;
+}
