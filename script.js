@@ -40,10 +40,7 @@ async function initializeRsvpSystem() {
             if (verificationStep) {
                 verificationStep.innerHTML = `
                     <div class="verification-content">
-                        <p class="verification-intro">RSVPs are currently closed.</p>
-                        <p style="font-family: Georgia, serif; color: #6B6B6B; font-size: 1rem;">
-                            If you still need to respond, please contact us directly.
-                        </p>
+                        <p class="verification-intro">RSVPs are closed.</p>
                     </div>
                 `;
             }
