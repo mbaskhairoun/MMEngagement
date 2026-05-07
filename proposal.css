@@ -284,8 +284,37 @@
     background: var(--white, #fff);
     border: 1px solid var(--cream-dark, #E8E1D3);
     border-radius: 8px;
-    cursor: pointer;
+    cursor: grab;
     transition: background 0.15s, box-shadow 0.15s;
+    position: relative;
+}
+
+.checklist-item:active {
+    cursor: grabbing;
+}
+
+.checklist-item.dragging {
+    opacity: 0.4;
+}
+
+.checklist-item.drop-above::before,
+.checklist-item.drop-below::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--accent, #B5985A);
+    border-radius: 2px;
+    pointer-events: none;
+}
+
+.checklist-item.drop-above::before {
+    top: -5px;
+}
+
+.checklist-item.drop-below::after {
+    bottom: -5px;
 }
 
 .checklist-item:hover {

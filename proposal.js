@@ -532,9 +532,18 @@ function filteredTasks() {
 
 function isTaskDone(t) { return t.status === 'done'; }
 
+function sortByTaskOrder(arr) {
+    return arr.slice().sort((a, b) => {
+        const ao = a.sortOrder ?? Number.MAX_SAFE_INTEGER;
+        const bo = b.sortOrder ?? Number.MAX_SAFE_INTEGER;
+        return ao - bo;
+    });
+}
+
 function assignmentSectionsHtml(tasks) {
-    const open = tasks.filter(t => !isTaskDone(t));
-    const done = tasks.filter(t => isTaskDone(t));
+    const sorted = sortByTaskOrder(tasks);
+    const open = sorted.filter(t => !isTaskDone(t));
+    const done = sorted.filter(t => isTaskDone(t));
     const assigned = open.filter(t => (t.assignees || []).length > 0);
     const unassigned = open.filter(t => (t.assignees || []).length === 0);
 
@@ -616,6 +625,83 @@ function renderTasks() {
             if (task) openTaskModal(task);
         });
     });
+
+    attachTaskDragHandlers(container);
+}
+
+let taskDragSourceId = null;
+
+function attachTaskDragHandlers(root) {
+    root.querySelectorAll('.checklist-items').forEach(container => {
+        container.querySelectorAll('.checklist-item').forEach(item => {
+            item.addEventListener('dragstart', (e) => {
+                taskDragSourceId = item.dataset.id;
+                item.classList.add('dragging');
+                e.dataTransfer.effectAllowed = 'move';
+                try { e.dataTransfer.setData('text/plain', item.dataset.id); } catch (_) {}
+            });
+
+            item.addEventListener('dragend', () => {
+                item.classList.remove('dragging');
+                document.querySelectorAll('.checklist-item.drop-above, .checklist-item.drop-below')
+                    .forEach(el => el.classList.remove('drop-above', 'drop-below'));
+                taskDragSourceId = null;
+            });
+
+            item.addEventListener('dragover', (e) => {
+                if (!taskDragSourceId || taskDragSourceId === item.dataset.id) return;
+                const sourceItem = document.querySelector(`.checklist-item[data-id="${taskDragSourceId}"]`);
+                if (!sourceItem || sourceItem.parentElement !== item.parentElement) return;
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                const rect = item.getBoundingClientRect();
+                const above = (e.clientY - rect.top) < rect.height / 2;
+                item.parentElement.querySelectorAll('.drop-above, .drop-below')
+                    .forEach(el => el.classList.remove('drop-above', 'drop-below'));
+                item.classList.add(above ? 'drop-above' : 'drop-below');
+            });
+
+            item.addEventListener('dragleave', (e) => {
+                if (!item.contains(e.relatedTarget)) {
+                    item.classList.remove('drop-above', 'drop-below');
+                }
+            });
+
+            item.addEventListener('drop', async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const sourceId = taskDragSourceId;
+                const above = item.classList.contains('drop-above');
+                item.classList.remove('drop-above', 'drop-below');
+                if (!sourceId || sourceId === item.dataset.id) return;
+                const sourceItem = document.querySelector(`.checklist-item[data-id="${sourceId}"]`);
+                if (!sourceItem || sourceItem.parentElement !== item.parentElement) return;
+                if (above) item.parentElement.insertBefore(sourceItem, item);
+                else item.parentElement.insertBefore(sourceItem, item.nextSibling);
+                await persistTaskSectionOrder(item.parentElement);
+            });
+        });
+    });
+}
+
+async function persistTaskSectionOrder(container) {
+    const items = [...container.querySelectorAll('.checklist-item')];
+    if (items.length === 0) return;
+    try {
+        const batch = window.firebaseWriteBatch(window.firebaseDb);
+        items.forEach((el, idx) => {
+            const id = el.dataset.id;
+            const ref = window.firebaseDoc(window.firebaseDb, 'proposal_tasks', id);
+            batch.update(ref, { sortOrder: idx });
+            const t = getTaskById(id);
+            if (t) t.sortOrder = idx;
+        });
+        await batch.commit();
+    } catch (err) {
+        alert('Error saving order: ' + err.message);
+        await loadCollection('proposal_tasks', (d) => allTasks = d);
+        renderTasks();
+    }
 }
 
 function taskRowHtml(t) {
@@ -644,7 +730,7 @@ function taskRowHtml(t) {
 
     const done = isTaskDone(t);
     return `
-        <div class="checklist-item ${done ? 'done' : ''}" data-id="${t.id}">
+        <div class="checklist-item ${done ? 'done' : ''}" data-id="${t.id}" draggable="true">
             <button class="checklist-checkbox ${done ? 'checked' : ''}" aria-label="${done ? 'Mark as not done' : 'Mark as done'}"></button>
             <div class="checklist-main">
                 <div class="checklist-title">${escapeHtml(t.title)}</div>
