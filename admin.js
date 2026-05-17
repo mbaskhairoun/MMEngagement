@@ -1342,43 +1342,55 @@ function renderEmailTab() {
     const container = document.getElementById('recipientList');
     if (!container) return;
 
-    // Build a map of guestId -> rsvp status
-    const rsvpMap = {};
+    const rsvpByGuestId = {};
     allRsvps.forEach(r => {
-        rsvpMap[r.guestId] = r.rsvpStatus || (r.attending === 'yes' ? 'confirmed' : 'declined');
+        if (r.guestId) rsvpByGuestId[r.guestId] = r;
     });
 
-    // Collect all recipients: guests with emails + member emails from RSVPs
-    let recipients = [];
+    const statusOf = (rsvp) => {
+        if (!rsvp) return 'pending';
+        if (rsvp.rsvpStatus) return rsvp.rsvpStatus;
+        if (rsvp.attending === 'yes') return 'confirmed';
+        if (rsvp.attending === 'no') return 'declined';
+        return 'pending';
+    };
 
+    // Dedupe by lowercased email
+    const recipientMap = new Map();
+    const addRecipient = (name, email, status, guestId) => {
+        if (!email) return;
+        const trimmed = String(email).trim();
+        if (!trimmed) return;
+        const key = trimmed.toLowerCase();
+        if (recipientMap.has(key)) return;
+        recipientMap.set(key, {
+            name: (name && String(name).trim()) || trimmed,
+            email: trimmed,
+            status: status || 'pending',
+            guestId: guestId || null
+        });
+    };
+
+    // 1. Emails from the guests collection
     allGuests.forEach(guest => {
-        const status = rsvpMap[guest.id] || 'pending';
+        const status = statusOf(rsvpByGuestId[guest.id]);
+        if (guest.email) addRecipient(guest.name, guest.email, status, guest.id);
+    });
 
-        // Add guest-level email
-        if (guest.email) {
-            recipients.push({
-                name: guest.name,
-                email: guest.email,
-                status: status,
-                guestId: guest.id
-            });
-        }
-
-        // Add individual member emails from RSVPs
-        const rsvp = allRsvps.find(r => r.guestId === guest.id);
-        if (rsvp && rsvp.memberEmails) {
+    // 2. Emails from the rsvps collection (covers rsvp.email and per-member emails,
+    //    including RSVPs whose guestId no longer matches a guest record)
+    allRsvps.forEach(rsvp => {
+        const status = statusOf(rsvp);
+        if (rsvp.email) addRecipient(rsvp.fullName, rsvp.email, status, rsvp.guestId);
+        if (rsvp.memberEmails) {
             for (const [memberName, memberEmail] of Object.entries(rsvp.memberEmails)) {
-                // Skip if same as guest-level email
-                if (memberEmail.toLowerCase() === (guest.email || '').toLowerCase()) continue;
-                recipients.push({
-                    name: memberName,
-                    email: memberEmail,
-                    status: status,
-                    guestId: guest.id
-                });
+                addRecipient(memberName, memberEmail, status, rsvp.guestId);
             }
         }
     });
+
+    let recipients = Array.from(recipientMap.values())
+        .sort((a, b) => a.name.localeCompare(b.name));
 
     // Apply filter
     if (emailRecipientFilter !== 'all') {
