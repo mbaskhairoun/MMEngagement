@@ -1470,54 +1470,67 @@ async function handleSendEmail() {
     // Confirm
     if (!confirm(`Send email to ${recipients.length} recipient(s)?`)) return;
 
-    // Show sending state
+    const total = recipients.length;
     sendBtn.disabled = true;
-    sendBtn.textContent = 'Sending...';
     statusEl.className = 'email-status sending';
-    statusEl.textContent = `Sending to ${recipients.length} recipient(s)...`;
     statusEl.style.display = 'block';
 
+    let token = '';
     try {
-        // Get Firebase auth token
         const user = window.firebaseAuth.currentUser;
-        const token = user ? await user.getIdToken() : '';
+        token = user ? await user.getIdToken() : '';
+    } catch (e) {
+        console.error('Token error:', e);
+    }
 
-        const response = await fetch('/.netlify/functions/send-email', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({
-                to: recipients,
-                subject: subject,
-                html: body,
-                from_email: 'info@marlybaskha.ca',
-                from_name: 'Marly & Michael'
-            })
-        });
+    const failures = [];
+    let succeeded = 0;
 
-        const result = await response.json();
+    for (let i = 0; i < total; i++) {
+        const recipient = recipients[i];
+        const progress = `${i + 1}/${total}`;
+        sendBtn.textContent = `Sending ${progress}...`;
+        statusEl.textContent = `Sending ${progress} — ${recipient.email}`;
 
-        if (response.ok) {
-            const hasFailures = Array.isArray(result.failures) && result.failures.length > 0;
-            statusEl.className = hasFailures ? 'email-status error' : 'email-status success';
-            if (hasFailures) {
-                const failedList = result.failures.map(f => f.email).join(', ');
-                statusEl.textContent = `${result.message || 'Some emails failed'} — failed: ${failedList}`;
+        try {
+            const response = await fetch('/.netlify/functions/send-email', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    to: [recipient],
+                    subject: subject,
+                    html: body,
+                    from_email: 'info@marlybaskha.ca',
+                    from_name: 'Marly & Michael'
+                })
+            });
+
+            const result = await response.json().catch(() => ({}));
+            if (response.ok && result.success !== false) {
+                succeeded++;
             } else {
-                statusEl.textContent = result.message || `Email sent successfully to ${recipients.length} recipient(s)!`;
+                failures.push({ email: recipient.email, error: result.error || `HTTP ${response.status}` });
             }
-        } else {
-            statusEl.className = 'email-status error';
-            statusEl.textContent = `Failed to send: ${result.error || 'Unknown error'}`;
+        } catch (error) {
+            failures.push({ email: recipient.email, error: error.message });
         }
-    } catch (error) {
-        console.error('Email send error:', error);
+    }
+
+    sendBtn.disabled = false;
+    sendBtn.textContent = 'Send Email';
+
+    if (failures.length === 0) {
+        statusEl.className = 'email-status success';
+        statusEl.textContent = `Sent ${succeeded} of ${total} email(s) successfully.`;
+    } else if (succeeded === 0) {
         statusEl.className = 'email-status error';
-        statusEl.textContent = `Error: ${error.message}`;
-    } finally {
-        sendBtn.disabled = false;
-        sendBtn.textContent = 'Send Email';
+        statusEl.textContent = `All ${total} email(s) failed. First error: ${failures[0].error}`;
+    } else {
+        statusEl.className = 'email-status error';
+        const failedList = failures.map(f => f.email).join(', ');
+        statusEl.textContent = `Sent ${succeeded} of ${total}; ${failures.length} failed: ${failedList}`;
     }
 }
