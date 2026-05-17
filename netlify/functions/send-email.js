@@ -180,17 +180,16 @@ function buildMessage({ recipient, subject, headerLabel, bodyHtml, footerMessage
 
     const text = `${headerLabel.toUpperCase()}\n\nDear ${firstName(recipient.name || recipient.email)},\n\n${personalBodyText}\n\n${footerMessage}\nMarly & Michael`;
 
+    // Note: custom headers (List-Unsubscribe) require a Professional MailerSend
+    // plan. Omitted here so the call works on free/starter. The footer in the
+    // template tells recipients to reply with "unsubscribe" instead.
     return {
         from: { email: fromEmail, name: fromName },
         to: [{ email: recipient.email.trim(), name: recipient.name || undefined }],
         reply_to: { email: fromEmail, name: fromName },
         subject: personalSubject,
         html,
-        text,
-        headers: [
-            { name: "List-Unsubscribe", value: `<mailto:${fromEmail}?subject=Unsubscribe>` },
-            { name: "List-Unsubscribe-Post", value: "List-Unsubscribe=One-Click" }
-        ]
+        text
     };
 }
 
