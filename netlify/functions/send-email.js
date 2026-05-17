@@ -195,7 +195,7 @@ function buildMessage({ recipient, subject, headerLabel, bodyHtml, footerMessage
 }
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const BULK_BATCH_SIZE = 500; // MailerSend bulk-email cap per request
+const SEND_CONCURRENCY = 5; // parallel /v1/email requests per batch
 
 // ── Handler ──────────────────────────────────────────────────
 
@@ -269,37 +269,54 @@ exports.handler = async (event) => {
         buildMessage({ recipient, subject, headerLabel, bodyHtml, footerMessage, preheader, fromEmail, fromName })
     );
 
-    try {
-        const responses = [];
-        for (let i = 0; i < messages.length; i += BULK_BATCH_SIZE) {
-            const batch = messages.slice(i, i + BULK_BATCH_SIZE);
-            const response = await fetch("https://api.mailersend.com/v1/bulk-email", {
+    async function sendOne(message) {
+        try {
+            const response = await fetch("https://api.mailersend.com/v1/email", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                     "Authorization": `Bearer ${apiToken}`
                 },
-                body: JSON.stringify(batch)
+                body: JSON.stringify(message)
             });
-
             if (!response.ok) {
                 const errText = await response.text();
-                console.error("MailerSend bulk-email error:", response.status, errText);
-                return {
-                    statusCode: response.status,
-                    body: JSON.stringify({ error: "Failed to queue emails", details: errText })
-                };
+                return { ok: false, email: message.to[0].email, status: response.status, error: errText };
             }
+            return { ok: true, email: message.to[0].email };
+        } catch (err) {
+            return { ok: false, email: message.to[0].email, error: err.message };
+        }
+    }
 
-            responses.push(await response.json());
+    try {
+        const results = [];
+        for (let i = 0; i < messages.length; i += SEND_CONCURRENCY) {
+            const batch = messages.slice(i, i + SEND_CONCURRENCY);
+            const batchResults = await Promise.all(batch.map(sendOne));
+            results.push(...batchResults);
         }
 
+        const succeeded = results.filter(r => r.ok);
+        const failed = results.filter(r => !r.ok);
+
+        if (failed.length === 0) {
+            return {
+                statusCode: 200,
+                body: JSON.stringify({
+                    success: true,
+                    message: `Sent ${succeeded.length} individual email(s)`
+                })
+            };
+        }
+
+        console.error("MailerSend send failures:", failed);
         return {
-            statusCode: 200,
+            statusCode: succeeded.length > 0 ? 207 : 502,
             body: JSON.stringify({
-                success: true,
-                message: `Queued ${recipients.length} individual email(s) for delivery`,
-                bulk_responses: responses
+                success: succeeded.length > 0,
+                message: `Sent ${succeeded.length} of ${results.length}; ${failed.length} failed`,
+                failures: failed.map(f => ({ email: f.email, status: f.status, error: f.error }))
             })
         };
     } catch (error) {

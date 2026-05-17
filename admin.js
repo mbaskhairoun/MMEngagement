@@ -1500,8 +1500,14 @@ async function handleSendEmail() {
         const result = await response.json();
 
         if (response.ok) {
-            statusEl.className = 'email-status success';
-            statusEl.textContent = `Email sent successfully to ${recipients.length} recipient(s)!`;
+            const hasFailures = Array.isArray(result.failures) && result.failures.length > 0;
+            statusEl.className = hasFailures ? 'email-status error' : 'email-status success';
+            if (hasFailures) {
+                const failedList = result.failures.map(f => f.email).join(', ');
+                statusEl.textContent = `${result.message || 'Some emails failed'} — failed: ${failedList}`;
+            } else {
+                statusEl.textContent = result.message || `Email sent successfully to ${recipients.length} recipient(s)!`;
+            }
         } else {
             statusEl.className = 'email-status error';
             statusEl.textContent = `Failed to send: ${result.error || 'Unknown error'}`;
