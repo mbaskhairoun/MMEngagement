@@ -1,0 +1,46 @@
+.head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.9rem;
+  margin-bottom: clamp(2.5rem, 2rem + 2.5vw, 4rem);
+}
+
+.start {
+  align-items: flex-start;
+  text-align: left;
+}
+
+.title {
+  font-size: var(--fs-2xl);
+  font-weight: 300;
+  line-height: 1.08;
+  max-width: 18ch;
+}
+
+.title em {
+  font-style: italic;
+  color: var(--sea-700);
+}
+
+.rule {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--sea-300);
+}
+
+.rule > span {
+  display: block;
+  width: clamp(2rem, 6vw, 3.5rem);
+  height: 1px;
+  background: currentColor;
+  opacity: 0.8;
+}
+
+.lede {
+  max-width: var(--measure);
+  color: var(--ink);
+  font-size: var(--fs-base);
+}

@@ -1,0 +1,315 @@
+.hero {
+  position: relative;
+  min-height: 100vh;
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  padding: clamp(5rem, 12vh, 8rem) var(--gutter) clamp(9rem, 22vh, 13rem);
+  overflow: hidden;
+  isolation: isolate;
+  background: linear-gradient(
+    180deg,
+    var(--cream-50) 0%,
+    var(--cream-100) 38%,
+    var(--sea-50) 68%,
+    var(--sea-100) 100%
+  );
+}
+
+/* Watercolour washes */
+.wash {
+  position: absolute;
+  inset: -10%;
+  z-index: -2;
+  background:
+    radial-gradient(42% 34% at 14% 22%, rgba(220, 235, 243, 0.85), transparent 70%),
+    radial-gradient(38% 30% at 88% 66%, rgba(185, 215, 230, 0.55), transparent 72%),
+    radial-gradient(30% 26% at 70% 12%, rgba(244, 238, 226, 0.9), transparent 70%),
+    radial-gradient(55% 40% at 50% 100%, rgba(143, 184, 207, 0.35), transparent 70%);
+  filter: blur(8px);
+  animation: drift 26s var(--ease) infinite alternate;
+}
+
+/* A low, hazy sun — sand and cream, no gold */
+.sun {
+  position: absolute;
+  z-index: -1;
+  width: clamp(16rem, 42vw, 34rem);
+  aspect-ratio: 1;
+  left: 50%;
+  bottom: clamp(5rem, 16vh, 9rem);
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 50% 55%,
+    rgba(255, 253, 248, 0.95) 0%,
+    rgba(244, 238, 226, 0.75) 35%,
+    rgba(232, 220, 196, 0.25) 60%,
+    transparent 72%
+  );
+}
+
+.content {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  max-width: 60rem;
+  animation: rise 1.6s var(--ease-slow) both;
+}
+
+.monogram {
+  width: clamp(88px, 22vw, 132px);
+  height: auto;
+  margin-bottom: clamp(1.25rem, 3vh, 1.75rem);
+  opacity: 0.92;
+}
+
+.eyebrow {
+  color: var(--sea-700);
+  margin-bottom: clamp(1.25rem, 3vh, 2rem);
+}
+
+.names {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-size: clamp(3.6rem, 2rem + 9vw, 9rem);
+  line-height: 0.92;
+  letter-spacing: 0.01em;
+  color: var(--ink);
+}
+
+.name {
+  display: block;
+}
+
+.amp {
+  display: block;
+  font-family: var(--font-script);
+  font-weight: 400;
+  font-size: 0.62em;
+  line-height: 1.15;
+  color: var(--sea-500);
+  margin: 0.02em 0 -0.08em;
+  /* Decorative scale — large type so 3:1 contrast suffices */
+}
+
+@media (min-width: 900px) {
+  .names {
+    flex-direction: row;
+    align-items: baseline;
+    gap: 0.22em;
+  }
+  .amp {
+    font-size: 0.7em;
+    margin: 0;
+    transform: translateY(0.08em);
+  }
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  gap: clamp(0.75rem, 2vw, 1.25rem);
+  margin-top: clamp(1.75rem, 4vh, 2.75rem);
+}
+
+.line {
+  width: clamp(1.75rem, 8vw, 4.5rem);
+  height: 1px;
+  background: var(--sea-300);
+}
+
+.date {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+  font-family: var(--font-display);
+  font-size: var(--fs-lg);
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.dot {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--sea-500);
+}
+
+.place {
+  margin-top: 0.6rem;
+  font-size: var(--fs-xs);
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+.actions {
+  margin-top: clamp(2rem, 5vh, 3rem);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.9rem;
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 10.5rem;
+  min-height: 3rem;
+  padding: 0.85rem 2.4rem;
+  border: 1px solid var(--sea-500);
+  border-radius: 999px;
+  background: rgba(255, 253, 248, 0.6);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  color: var(--sea-700);
+  font-size: var(--fs-xs);
+  font-weight: 500;
+  letter-spacing: 0.3em;
+  text-indent: 0.3em;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition:
+    background-color 0.8s var(--ease-slow),
+    box-shadow 0.8s var(--ease-slow),
+    color 0.8s var(--ease-slow),
+    transform 0.8s var(--ease-slow);
+}
+
+.button:hover {
+  background: var(--white);
+  box-shadow: var(--glow);
+  transform: translateY(-1px);
+}
+
+.deadline {
+  font-size: var(--fs-sm);
+  color: var(--ink);
+  font-style: italic;
+  font-family: var(--font-display);
+  letter-spacing: 0.02em;
+}
+
+/* Scroll cue */
+.cue {
+  position: absolute;
+  z-index: 2;
+  left: 50%;
+  bottom: clamp(1.25rem, 4vh, 2rem);
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--sea-700);
+  font-size: 0.65rem;
+  letter-spacing: 0.3em;
+  text-indent: 0.3em;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+
+.cueLine {
+  position: relative;
+  width: 1px;
+  height: 2.5rem;
+  background: rgba(60, 107, 133, 0.25);
+  overflow: hidden;
+}
+
+.cueLine::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: -40%;
+  width: 1px;
+  height: 40%;
+  background: var(--sea-700);
+  animation: cue 2.6s var(--ease) infinite;
+}
+
+/* Waves */
+.waves {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: clamp(7rem, 18vh, 11rem);
+  z-index: 1;
+  pointer-events: none;
+}
+
+.layer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 200%;
+  height: 100%;
+  max-width: none;
+  animation: tide linear infinite;
+}
+
+.layerBack {
+  animation-duration: 48s;
+}
+.layerMid {
+  animation-duration: 34s;
+  animation-direction: reverse;
+}
+.layerFront {
+  animation-duration: 60s;
+}
+
+@keyframes tide {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+@keyframes drift {
+  from {
+    transform: translate3d(-1.5%, 0, 0) scale(1);
+  }
+  to {
+    transform: translate3d(1.5%, -1%, 0) scale(1.04);
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 18px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes cue {
+  0% {
+    top: -40%;
+  }
+  70%,
+  100% {
+    top: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .layer,
+  .wash,
+  .cueLine::after {
+    animation: none;
+  }
+}

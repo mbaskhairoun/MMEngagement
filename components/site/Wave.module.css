@@ -1,0 +1,15 @@
+.wave {
+  position: relative;
+  line-height: 0;
+  margin-top: -1px;
+  margin-bottom: -1px;
+}
+
+.wave svg {
+  width: 100%;
+  height: clamp(44px, 7vw, 110px);
+}
+
+.flip {
+  transform: scaleX(-1);
+}

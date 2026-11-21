@@ -1,0 +1,48 @@
+.section {
+  position: relative;
+  padding: var(--section-y) var(--gutter) calc(var(--section-y) + 3rem);
+  background: var(--cream-100);
+  border-top: 1px solid var(--line);
+}
+
+.inner {
+  max-width: 70rem;
+  margin: 0 auto;
+}
+
+/* Phone: two offset columns. Desktop: three, the centre column dropped. */
+.grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: clamp(1rem, 4vw, 2rem);
+  row-gap: clamp(1.75rem, 5vw, 3rem);
+  align-items: start;
+}
+
+.item {
+  --offset: 0rem;
+  translate: 0 var(--offset);
+}
+
+.item:nth-child(even) {
+  --offset: 2.75rem;
+}
+
+@media (min-width: 900px) {
+  .grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    column-gap: clamp(1.5rem, 3vw, 3rem);
+    row-gap: clamp(2.5rem, 4vw, 4rem);
+  }
+
+  .item:nth-child(even) {
+    --offset: 0rem;
+  }
+
+  .item:nth-child(3n + 2) {
+    --offset: 4.5rem;
+  }
+}

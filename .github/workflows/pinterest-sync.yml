@@ -1,0 +1,44 @@
+name: Pinterest sync
+
+# Full crawl of the public Pinterest board into the decor portal (see docs/DECOR.md).
+# Daily at 03:00 UTC (~05:00 Cairo), or on demand (Actions tab, or POST /api/decor/sync?full=1).
+
+on:
+  schedule:
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: pinterest-sync
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN }}
+      PINTEREST_BOARD_URL: ${{ vars.PINTEREST_BOARD_URL }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # Full `puppeteer` is not a dependency (keeps installs light); sync.mjs uses its
+      # executablePath() to find the browser installed below.
+      - name: Install headless Chrome
+        run: |
+          npm i --no-save puppeteer@^24
+          npx puppeteer browsers install chrome
+
+      - name: Sync board
+        run: node scripts/pinterest/sync.mjs

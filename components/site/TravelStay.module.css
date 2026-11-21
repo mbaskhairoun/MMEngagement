@@ -1,0 +1,136 @@
+.section {
+  position: relative;
+  padding: var(--section-y) var(--gutter);
+  background:
+    radial-gradient(40% 50% at 85% 20%, rgba(255, 253, 248, 0.75), transparent 70%),
+    radial-gradient(45% 55% at 10% 85%, rgba(185, 215, 230, 0.45), transparent 70%),
+    var(--sea-50);
+}
+
+.section {
+  overflow: hidden;
+  isolation: isolate;
+}
+
+/* A whisper of a photograph beneath a sea-mist veil */
+.backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+}
+
+.backdropImg {
+  object-fit: cover;
+  object-position: 50% 30%;
+  filter: saturate(0.45) blur(2px);
+  opacity: 0.42;
+}
+
+.backdrop::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(40% 50% at 85% 20%, rgba(255, 253, 248, 0.6), transparent 70%),
+    linear-gradient(180deg, rgba(238, 245, 249, 0.9) 0%, rgba(238, 245, 249, 0.86) 45%, rgba(238, 245, 249, 0.96) 100%);
+}
+
+.inner {
+  position: relative;
+  max-width: 68rem;
+  margin: 0 auto;
+}
+
+.tip {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  max-width: 40rem;
+  margin: 0 auto clamp(2.5rem, 5vw, 3.5rem);
+  padding: 1.1rem 1.4rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: rgba(255, 253, 248, 0.75);
+  color: var(--ink);
+}
+
+@media (max-width: 520px) {
+  .tip {
+    border-radius: var(--radius);
+    align-items: flex-start;
+  }
+}
+
+.tipIcon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 50%;
+  background: var(--sea-100);
+  color: var(--sea-700);
+}
+
+.tip p {
+  font-size: var(--fs-sm);
+}
+
+.tipLabel {
+  display: block;
+  font-size: var(--fs-xs);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--sea-700);
+  font-weight: 500;
+}
+
+.tip strong {
+  font-weight: 500;
+}
+
+.grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: clamp(1rem, 2.5vw, 1.75rem);
+}
+
+@media (min-width: 860px) {
+  .grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.card {
+  padding: clamp(1.75rem, 3.5vw, 2.5rem) clamp(1.5rem, 3vw, 2.25rem);
+  background: var(--cream-50);
+  border: 1px solid var(--line);
+  border-radius: 50% 50% var(--radius) var(--radius) / 4.5rem 4.5rem var(--radius) var(--radius);
+  text-align: center;
+  box-shadow: var(--shadow-soft);
+}
+
+.icon {
+  display: inline-grid;
+  place-items: center;
+  width: 4rem;
+  height: 4rem;
+  margin-top: 0.5rem;
+  border-radius: 50%;
+  border: 1px solid var(--sea-200);
+  color: var(--sea-700);
+}
+
+.cardTitle {
+  margin-top: 1.25rem;
+  font-size: var(--fs-xl);
+  font-weight: 400;
+}
+
+.cardBody {
+  margin-top: 0.75rem;
+  font-size: var(--fs-sm);
+  color: var(--ink);
+}

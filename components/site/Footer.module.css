@@ -1,0 +1,79 @@
+.footer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.6rem;
+  padding: clamp(3rem, 6vw, 5rem) var(--gutter) clamp(2rem, 4vw, 3rem);
+  background: var(--sea-50);
+}
+
+.wave {
+  width: min(22rem, 70%);
+  height: 20px;
+  margin-bottom: 1.25rem;
+}
+
+.monogram {
+  width: 64px;
+  height: auto;
+  opacity: 0.9;
+}
+
+.script {
+  margin-top: 0.5rem;
+  font-family: var(--font-script);
+  font-size: clamp(1.6rem, 1.3rem + 1vw, 2.1rem);
+  line-height: 1.1;
+  color: var(--sea-700);
+}
+
+.names {
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-size: var(--fs-2xl);
+  line-height: 1.1;
+  color: var(--ink);
+}
+
+.names span {
+  font-style: italic;
+  color: var(--sea-700);
+}
+
+.date {
+  font-size: var(--fs-xs);
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+.nav {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.4rem 1.5rem;
+  margin-top: 1.75rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--line);
+  min-width: min(20rem, 100%);
+}
+
+.nav a {
+  font-size: var(--fs-xs);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink);
+  text-decoration: none;
+  padding: 0.35rem 0;
+}
+
+.nav a:hover {
+  color: var(--sea-700);
+  text-decoration: underline;
+}
+
+.nav .admin {
+  color: var(--ink);
+  opacity: 0.85;
+}

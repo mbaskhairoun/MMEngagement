@@ -1,0 +1,30 @@
+.reveal {
+  transition:
+    opacity 1.1s var(--ease-slow),
+    transform 1.1s var(--ease-slow);
+  transition-delay: var(--reveal-delay, 0ms);
+}
+
+.reveal[data-visible="false"] {
+  opacity: 0;
+  transform: translate3d(0, 22px, 0);
+}
+
+.reveal[data-visible="true"] {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal[data-visible="false"] {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (scripting: none) {
+  .reveal[data-visible="false"] {
+    opacity: 1;
+    transform: none;
+  }
+}

@@ -1,0 +1,186 @@
+.section {
+  position: relative;
+  background: var(--cream-100);
+  padding: var(--section-y) var(--gutter);
+}
+
+.inner {
+  max-width: 50rem;
+  margin: 0 auto;
+}
+
+.timeline {
+  position: relative;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: clamp(2rem, 4vw, 3rem);
+}
+
+/* The hairline rail */
+.timeline::before {
+  content: "";
+  position: absolute;
+  top: 1.75rem;
+  bottom: 1.75rem;
+  left: calc(1.75rem - 0.5px);
+  width: 1px;
+  background: linear-gradient(180deg, var(--sea-300), var(--sea-200) 50%, var(--sea-300));
+}
+
+.item {
+  position: relative;
+  display: grid;
+  grid-template-columns: 3.5rem minmax(0, 1fr);
+  gap: clamp(1rem, 3vw, 2rem);
+  align-items: start;
+}
+
+.node {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 50%;
+  background: var(--cream-50);
+  border: 1px solid var(--sea-300);
+  color: var(--sea-700);
+  box-shadow: 0 0 0 6px var(--cream-100);
+}
+
+.card {
+  position: relative;
+  padding: clamp(1.5rem, 4vw, 2.5rem);
+  background: var(--cream-50);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-soft);
+  transition:
+    transform 0.9s var(--ease-slow),
+    box-shadow 0.9s var(--ease-slow);
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 1px 2px rgba(47, 79, 95, 0.04),
+    0 24px 48px -26px rgba(60, 107, 133, 0.4);
+}
+
+.time {
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-size: clamp(2.2rem, 1.7rem + 2vw, 3.2rem);
+  line-height: 1;
+  color: var(--sea-700);
+}
+
+.kind {
+  margin-top: 0.9rem;
+}
+
+.name {
+  margin-top: 0.35rem;
+  font-size: var(--fs-xl);
+  font-weight: 400;
+}
+
+.venue {
+  margin-top: 1rem;
+  font-family: var(--font-display);
+  font-size: var(--fs-lg);
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.area {
+  font-size: var(--fs-xs);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.note {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+  color: var(--ink);
+  font-size: var(--fs-sm);
+}
+
+.mapLink {
+  margin-top: 1.25rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: var(--fs-xs);
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: var(--sea-700);
+  padding-bottom: 0.2rem;
+  background: linear-gradient(currentColor, currentColor) 0 100% / 0% 1px no-repeat;
+  transition: background-size 0.8s var(--ease-slow);
+}
+
+.mapLink:hover {
+  background-size: 100% 1px;
+}
+
+/* Add to calendar */
+.calendar {
+  margin-top: clamp(3rem, 6vw, 4.5rem);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.1rem;
+  text-align: center;
+}
+
+.calendarLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: var(--sea-700);
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: var(--fs-lg);
+}
+
+.calendarLinks {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.calButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.75rem;
+  padding: 0.7rem 1.5rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: var(--cream-50);
+  color: var(--sea-700);
+  font-size: var(--fs-xs);
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition:
+    box-shadow 0.8s var(--ease-slow),
+    border-color 0.8s var(--ease-slow),
+    background-color 0.8s var(--ease-slow);
+}
+
+.calButton:hover {
+  background: var(--white);
+  border-color: var(--sea-500);
+  box-shadow: var(--glow);
+}

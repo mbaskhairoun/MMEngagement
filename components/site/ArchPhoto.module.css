@@ -1,0 +1,50 @@
+.frame {
+  position: relative;
+  margin: 0;
+  isolation: isolate;
+  width: 100%;
+}
+
+.frame::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 1px solid var(--sea-300);
+  border-radius: var(--radius-arch);
+  z-index: -1;
+  transition: transform 1.4s var(--ease-slow);
+}
+
+.right::after {
+  transform: translate(clamp(8px, 1.2vw, 14px), clamp(8px, 1.2vw, 14px));
+}
+
+.left::after {
+  transform: translate(calc(clamp(8px, 1.2vw, 14px) * -1), clamp(8px, 1.2vw, 14px));
+}
+
+.clip {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: var(--radius-arch);
+  background: var(--sea-100);
+  box-shadow: var(--shadow-soft);
+}
+
+.img {
+  object-fit: cover;
+  transition: transform 2.4s var(--ease-slow);
+}
+
+.frame:hover .img {
+  transform: scale(1.025);
+}
+
+.frame:hover.right::after {
+  transform: translate(clamp(5px, 0.8vw, 9px), clamp(5px, 0.8vw, 9px));
+}
+
+.frame:hover.left::after {
+  transform: translate(calc(clamp(5px, 0.8vw, 9px) * -1), clamp(5px, 0.8vw, 9px));
+}
